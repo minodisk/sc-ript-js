@@ -72,23 +72,16 @@ class Bitmap
   clear: ->
     @canvas.width = @canvas.width
 
-  draw: (image) ->
+  draw: (image, matrix) ->
+    if matrix?
+      @context.setTransform matrix.m11, matrix.m12, matrix.m21, matrix.m22, matrix.tx, matrix.ty
     @context.drawImage image, 0, 0
 
-  drawAt: (image, point) ->
-    @context.drawImage image, point.x, point.y
-
-  drawTo: (image, rect) ->
-    @context.drawImage image, rect.x, rect.y, rect.width, rect.height
-
-  drawFromTo: (image, from, to) ->
-    @context.drawImage image, from.x, from.y, from.width, from.height, to.x, to.y, to.width, to.height
-
   encodeAsPNG: ->
-    @canvas.toDataURL 'image/jpeg'
+    ByteArray.fromDataURL @canvas.toDataURL 'image/png'
 
   encodeAsJPG: (quality = 0.8) ->
-    @canvas.toDataURL 'image/jpeg', quality
+    ByteArray.fromDataURL @canvas.toDataURL 'image/jpeg', quality
 
 
 
@@ -261,6 +254,34 @@ class path
     return normalized.join '/'
 
 
+
+#package sc.ript.utils
+
+class ByteArray
+
+  @BlobBuilder: window.BlobBuilder or window.WebKitBlobBuilder or window.MozBlobBuilder
+
+  @fromDataURL: (dataURL) ->
+    mimeString = dataURL.split(',')[0].split(':')[1].split(';')[0]
+    byteString = atob dataURL.split(',')[1]
+
+    ab = new ArrayBuffer byteString.length
+    ia = new Uint8Array ab
+    for i in [0...byteString.length] by 1
+      ia[i] = byteString.charCodeAt i
+
+    if @BlobBuilder?
+      bb = new ByteArray.BlobBuilder
+      bb.append ab
+      new ByteArray bb.getBlob mimeString
+    else
+      new ByteArray new Blob [ab], type: mimeString
+
+# for Chrome
+#      new ByteArray new Blob [ia], type: mimeString
+
+
+  constructor: (@data) ->
 
 #package sc.ript.utils
 
@@ -469,6 +490,7 @@ window[k] = v for k, v of {
       },
       "path": path,
       "utils": {
+        "ByteArray": ByteArray,
         "NumberUtil": NumberUtil
       },
       "ui": {

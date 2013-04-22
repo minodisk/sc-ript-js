@@ -17,22 +17,15 @@ class Bitmap
   clear: ->
     @canvas.width = @canvas.width
 
-  draw: (image) ->
+  draw: (image, matrix) ->
+    if matrix?
+      @context.setTransform matrix.m11, matrix.m12, matrix.m21, matrix.m22, matrix.tx, matrix.ty
     @context.drawImage image, 0, 0
 
-  drawAt: (image, point) ->
-    @context.drawImage image, point.x, point.y
-
-  drawTo: (image, rect) ->
-    @context.drawImage image, rect.x, rect.y, rect.width, rect.height
-
-  drawFromTo: (image, from, to) ->
-    @context.drawImage image, from.x, from.y, from.width, from.height, to.x, to.y, to.width, to.height
-
   encodeAsPNG: ->
-    @canvas.toDataURL 'image/jpeg'
+    ByteArray.fromDataURL @canvas.toDataURL 'image/png'
 
   encodeAsJPG: (quality = 0.8) ->
-    @canvas.toDataURL 'image/jpeg', quality
+    ByteArray.fromDataURL @canvas.toDataURL 'image/jpeg', quality
 
 
