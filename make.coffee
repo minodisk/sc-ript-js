@@ -55,8 +55,6 @@ class CoffeeMill
 
     Deferred
       .next =>
-        @readFile()
-      .next =>
         if commander.ver?
           commander.ver
         else unless @makefile.compiler.useGitTag
@@ -135,37 +133,42 @@ class CoffeeMill
         output = path.join __dirname, @makefile.dst.dir, filename
         fs.writeFileSync output, code, 'utf8'
         sys.puts 'concat    : '.cyan + output
+        @copy code, filename
 
-        filename = "#{@makefile.dst.file}#{postfix}.js"
-        output = path.join __dirname, @makefile.dst.dir, filename
         { js: code, v3SourceMap } = @coffee code
         if @makefile.compiler.sourceMap
           code += "\n/*\n//@ sourceMappingURL=#{@makefile.dst.file}#{postfix}.map\n*/"
+        filename = "#{@makefile.dst.file}#{postfix}.js"
+        output = path.join __dirname, @makefile.dst.dir, filename
         fs.writeFileSync output, code, 'utf8'
         sys.puts 'compile   : '.cyan + output
+        @copy code, filename
 
         if @makefile.compiler.sourceMap
           filename = "#{@makefile.dst.file}#{postfix}.map"
           output = path.join __dirname, @makefile.dst.dir, filename
           fs.writeFileSync output, v3SourceMap, 'utf8'
           sys.puts 'source map: '.cyan + output
+          @copy code, filename
 
         if @makefile.compiler.minify
+          { code } = uglify.minify code, { fromString: true }
           filename = "#{@makefile.dst.file}#{postfix}.min.js"
           output = path.join __dirname, @makefile.dst.dir, filename
-          { code } = uglify.minify code, { fromString: true }
           fs.writeFileSync output, code, 'utf8'
           sys.puts 'minify    : '.cyan + output
-
-        if commander.copy
-          output = path.join commander.copy, filename
-          fs.writeFileSync output, code, 'utf8'
-          sys.puts 'copy      : '.cyan + output
+          @copy code, filename
 
         sys.puts 'complete!!'.green
 
       .error (err) ->
         sys.error err.stack
+
+  copy: (code, filename) ->
+    return unless commander.copy
+    output = path.join commander.copy, filename
+    fs.writeFileSync output, code, 'utf8'
+    sys.puts 'copy      : '.cyan + output
 
   gitTag: ->
     d = new Deferred()
@@ -185,7 +188,7 @@ class CoffeeMill
       while i--
         tag = tags[i]
         r = tag.match CoffeeMill.rTagVersion
-        continue unless r? [ 1 ]?
+        continue unless r?[1]?
         versions = r[1].split '.'
         minor = parseInt versions[versions.length - 1], 10
         versions[versions.length - 1] = minor + 1
@@ -282,17 +285,6 @@ class CoffeeMill
       coffee.compile code, { sourceMap: true }
     catch err
       sys.puts "Compile Error: #{err.toString()}".red
-
-
-readFile = (path, encoding) ->
-  d = new Deferred()
-  fs.readFile path, encoding, (err, data) ->
-    if err?
-      d.fail err
-    else
-      d.call data
-
-  d
 
 
 new CoffeeMill
