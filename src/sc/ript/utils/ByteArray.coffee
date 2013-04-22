@@ -25,3 +25,6 @@ class ByteArray
 
 
   constructor: (@data) ->
+
+  length: ->
+    @data.size

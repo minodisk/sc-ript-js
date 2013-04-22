@@ -25,6 +25,9 @@ class NumberUtil
   @mb: (bytes) ->
     bytes / @MB
 
+  @gb: (bytes) ->
+    bytes / @GB
+
   @random: (a, b) ->
     a + (b - a) * Math.random()
 
