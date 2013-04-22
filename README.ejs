@@ -1,0 +1,28 @@
+# <%- title %>
+
+## Import
+```html
+<script src="<%- title %>">
+```
+
+## Make
+```bash
+$ node make.js -w
+```
+
+## API Documentation
+
+<% properties.forEach(function (property, i) {%>
+### <%- property.name %>
+<%- property.comment %>
+
+<% if (property.params.length) { %>**Params**
+<% property.params.forEach(function (param) { %>* **<%- param.name %>** : *<%- param.types.join(' | ') %>* - <%- param.description %> <% if (param.optional) { %>(オプション)<% } %> <% if (param.defaultValue) { %>(デフォルト値 `<%- param.defaultValue %>`)<% } %>
+<% }) %>
+<% } %>
+<% if (property.returns.length) { %>**Return**
+<% property.returns.forEach(function (ret) { %>* *<%- ret.types.join(' | ') %>* - <%- ret.description %>
+<% }) %>
+<% } %>
+<% if (i !== properties.length - 1) { %>***<% } %>
+<% }) %>
