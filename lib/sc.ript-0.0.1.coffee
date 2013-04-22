@@ -176,10 +176,56 @@ class EventEmitter
 
 #package sc.ript.geom
 
-
 class Point
 
+  @equals: (pt0, pt1) ->
+    pt0.x is pt1.x and pt0.y is pt1.y
+
+  @dotProduct: (pt0, pt1) ->
+    pt0.x * pt1.x + pt0.y * pt1.y
+
+  @angle: (pt0, pt1) ->
+    pt1.subtract(pt0).angle()
+
+  @distance: (pt0, pt1) ->
+    pt1.subtract(pt0).length()
+
+  @interpolate: (pt0, pt1, ratio) ->
+    pt0.add pt1.subtract(pt0).multiply(ratio)
+
+
   constructor: (@x = 0, @y = 0) ->
+
+  angle      : (value) ->
+    return Math.atan2 @y, @x unless value?
+
+    length = @length()
+    @x = length * Math.cos value
+    @y = length * Math.sin value
+
+  length: (value) ->
+    return Math.sqrt @x * @x + @y * @y unless value?
+
+    angle = @angle()
+    @x = value * Math.cos angle
+    @y = value * Math.sin angle
+
+  clone: ->
+    new Point @x, @y
+
+  add: (pt) ->
+    new Point @x + pt.x, @y + pt.y
+
+  subtract: (pt) ->
+    new Point @x - pt.x, @y - pt.y
+
+  multiply: (value) ->
+    new Point @x * value, @y * value
+
+  divide: (value) ->
+    new Point @x / value, @y / value
+
+
 
 #package sc.ript.geom
 
@@ -213,6 +259,38 @@ class path
           normalized.push path
           break
     return normalized.join '/'
+
+
+
+#package sc.ript.utils
+
+class NumberUtil
+
+  @RADIAN_PER_DEGREE: Math.PI / 180
+  @DEGREE_PER_RADIAN: 180 / Math.PI
+  @KB               : 1024
+  @MB               : @KB * @KB
+  @GB               : @MB * @KB
+  @TB               : @GB * @KB
+
+  @degree: (radian) ->
+    radian * @DEGREE_PER_RADIAN
+
+  @radian: (degree) ->
+    degree * @RADIAN_PER_DEGREE
+
+  @signify: (value, digit) ->
+    base = Math.pow 10, digit
+    (value * base >> 0) / base
+
+  @kb: (bytes) ->
+    bytes / @KB
+
+  @mb: (bytes) ->
+    bytes / @MB
+
+  @random: (a, b) ->
+    a + (b - a) * Math.random()
 
 
 
@@ -390,6 +468,9 @@ window[k] = v for k, v of {
         "Rectangle": Rectangle
       },
       "path": path,
+      "utils": {
+        "NumberUtil": NumberUtil
+      },
       "ui": {
         "Button": Button
       }
