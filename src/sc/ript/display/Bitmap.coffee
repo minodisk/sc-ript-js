@@ -89,6 +89,9 @@ class Bitmap extends DisplayObject
     rect = new Rectangle 0, 0, @width(), @height() unless rect?
     @_context.getImageData rect.x, rect.y, rect.width, rect.height
 
+  setPixels: (imageData) ->
+    @_context.putImageData imageData, 0, 0
+
   getPixel32: (x, y) ->
     {data: [r, g, b, a]} = @_context.getImageData x, y, 1, 1
     a << 24 | r << 16 | g << 8 | b
@@ -96,6 +99,12 @@ class Bitmap extends DisplayObject
   getPixel: (x, y) ->
     {data: [r, g, b]} = @_context.getImageData x, y, 1, 1
     r << 16 | g << 8 | b
+
+  filter: (filters...) ->
+    imageData = @getPixels()
+    for filter in filters
+      filter.run imageData
+    @setPixels imageData
 
 
 

@@ -20,6 +20,38 @@ class Color
 
 #package sc.ript.display
 
+class BlendMode
+
+  @NORMAL: 'normal'
+  @BLEND: 'blend'
+  @ADD: 'add'
+  @SUBTRACT: 'subtract'
+  @DARKEST: 'darkest'
+  @LIGHTEST: 'lightest'
+  @DIFFERENCE: 'difference'
+  @EXCLUSION: 'exclusion'
+  @MULTIPLY: 'multiply'
+  @SCREEN: 'screen'
+
+  @OVERLAY: 'overlay'
+  @SOFT_LIGHT: 'softLight'
+  @HARD_LIGHT: 'hardLight'
+  @VIVID_LIGHT: 'vividLight'
+  @LINEAR_LIGHT: 'linearLight'
+  @PIN_LIGHT: 'pinLight'
+  @HARD_MIX: 'hardMix'
+
+  @DODGE: 'dodge'
+  @BURN: 'burn'
+  @LINEAR_DODGE: 'linearDodge'
+  @LINEAR_BURN: 'linearBurn'
+
+  @PUNCH: 'punch'
+  @MASK: 'mask'
+
+
+#package sc.ript.display
+
 class CapsStyle
 
   @NONE  : 'butt'
@@ -58,176 +90,6 @@ class GraphicsPathCommand
   @WIDE_MOVE_TO  : 4
   @WIDE_LINE_TO  : 5
   @CUBIC_CURVE_TO: 6
-
-
-#package sc.ript.display
-
-class JointStyle
-
-  @BEVEL: 'bevel'
-  @MITER: 'miter'
-  @ROUND: 'round'
-
-#package sc.ript.display
-
-class BlendMode
-
-  @NORMAL: 'normal'
-  @BLEND: 'blend'
-  @ADD: 'add'
-  @SUBTRACT: 'subtract'
-  @DARKEST: 'darkest'
-  @LIGHTEST: 'lightest'
-  @DIFFERENCE: 'difference'
-  @EXCLUSION: 'exclusion'
-  @MULTIPLY: 'multiply'
-  @SCREEN: 'screen'
-
-  @OVERLAY: 'overlay'
-  @SOFT_LIGHT: 'softLight'
-  @HARD_LIGHT: 'hardLight'
-  @VIVID_LIGHT: 'vividLight'
-  @LINEAR_LIGHT: 'linearLight'
-  @PIN_LIGHT: 'pinLight'
-  @HARD_MIX: 'hardMix'
-
-  @DODGE: 'dodge'
-  @BURN: 'burn'
-  @LINEAR_DODGE: 'linearDodge'
-  @LINEAR_BURN: 'linearBurn'
-
-  @PUNCH: 'punch'
-  @MASK: 'mask'
-
-
-#package sc.ript.color
-
-class HSV
-
-  constructor: (@h, @s, @v) ->
-    if arguments.length is 1
-      hex = h
-      rgb = new RGB hex
-      r = rgb.r / 255
-      g = rgb.g / 255
-      b = rgb.b / 255
-
-      h = s = v = 0
-      if r >= g then x = r else x = g
-      if b > x then x = b
-      if r <= g then y = r else y = g
-      if b < y then y = b
-      v = x
-      c = x - y
-      if x is 0
-        s = 0
-      else
-        s = c / x
-      if s isnt 0
-        if r is x
-          h = (g - b) / c
-        else
-          if g is x
-            h = 2 + (b - r) / c
-          else
-            if b is x
-              h = 4 + (r - g) / c
-        h = h * 60
-        if h < 0
-          h = h + 360
-      @h = h
-      @s = s
-      @v = v
-    @normalize()
-
-  normalize: ->
-    @s = if @s < 0 then 0 else if @s > 1 then 1 else @s
-    @v = if @v < 0 then 0 else if @v > 1 then 1 else @v
-    @h = @h % 360
-    @h += 360 if @h < 0
-
-  toRGB: ->
-    @normalize()
-    {h, s, v} = @
-    h /= 60
-    i = h >> 0
-    x = v * (1 - s)
-    y = v * (1 - s * (h - 1))
-    z = v * (1 - s * (1 - h + i))
-    x = x * 0xff >> 0
-    y = y * 0xff >> 0
-    z = z * 0xff >> 0
-    v = v * 0xff >> 0
-    switch i
-      when 0 then new RGB v, z, x
-      when 1 then new RGB y, v, x
-      when 2 then new RGB x, v, z
-      when 3 then new RGB x, y, v
-      when 4 then new RGB z, x, v
-      when 5 then new RGB v, x, y
-
-  toHex: ->
-    @toRGB().toHex()
-
-
-
-
-
-
-#package sc.ript.filter
-
-class Filter
-
-  constructor: ->
-
-  scan: (source, rect) ->
-
-
-
-class KernelFilter
-
-
-
-#package sc.ript.geom
-
-class Matrix
-
-  constructor: (@m11 = 1, @m12 = 0, @m21 = 0, @m22 = 1, @tx = 0, @ty = 0) ->
-
-  translate  : (x = 0, y = 0) ->
-    @concat new Matrix 1, 0, 0, 1, x, y
-    @
-
-  scale: (x = 1, y = 1) ->
-    @concat new Matrix x, 0, 0, y, 0, 0
-    @
-
-  rotate: (theta) ->
-    s = Math.sin theta
-    c = Math.cos theta
-    @concat new Matrix c, s, -s, c, 0, 0
-    @
-
-  concat: (matrix) ->
-    { m11, m12, m21, m22, tx, ty } = @
-    @m11 = m11 * matrix.m11 + m12 * matrix.m21
-    @m12 = m11 * matrix.m12 + m12 * matrix.m22
-    @m21 = m21 * matrix.m11 + m22 * matrix.m21
-    @m22 = m21 * matrix.m12 + m22 * matrix.m22
-    @tx = tx * matrix.m11 + ty * matrix.m21 + matrix.tx
-    @ty = tx * matrix.m12 + ty * matrix.m22 + matrix.ty
-    @
-
-  invert: ->
-    { m11, m12, m21, m22, tx, ty } = @
-    d = m11 * m22 - m12 * m21
-    @m11 = m22 / d
-    @m12 = -m12 / d
-    @m21 = -m21 / d
-    @m22 = m11 / d
-    @m41 = (m21 * ty - m22 * tx) / d
-    @m42 = (m12 * tx - m11 * ty) / d
-    @
 
 
 #package tc.ript.display
@@ -489,6 +351,309 @@ class Blend
 
 
 
+#package sc.ript.event
+
+
+class Event
+
+  constructor: (@type, @data) ->
+
+
+#package sc.ript.color
+
+class HSV
+
+  constructor: (@h, @s, @v) ->
+    if arguments.length is 1
+      hex = h
+      rgb = new RGB hex
+      r = rgb.r / 255
+      g = rgb.g / 255
+      b = rgb.b / 255
+
+      h = s = v = 0
+      if r >= g then x = r else x = g
+      if b > x then x = b
+      if r <= g then y = r else y = g
+      if b < y then y = b
+      v = x
+      c = x - y
+      if x is 0
+        s = 0
+      else
+        s = c / x
+      if s isnt 0
+        if r is x
+          h = (g - b) / c
+        else
+          if g is x
+            h = 2 + (b - r) / c
+          else
+            if b is x
+              h = 4 + (r - g) / c
+        h = h * 60
+        if h < 0
+          h = h + 360
+      @h = h
+      @s = s
+      @v = v
+    @normalize()
+
+  normalize: ->
+    @s = if @s < 0 then 0 else if @s > 1 then 1 else @s
+    @v = if @v < 0 then 0 else if @v > 1 then 1 else @v
+    @h = @h % 360
+    @h += 360 if @h < 0
+
+  toRGB: ->
+    @normalize()
+    {h, s, v} = @
+    h /= 60
+    i = h >> 0
+    x = v * (1 - s)
+    y = v * (1 - s * (h - 1))
+    z = v * (1 - s * (1 - h + i))
+    x = x * 0xff >> 0
+    y = y * 0xff >> 0
+    z = z * 0xff >> 0
+    v = v * 0xff >> 0
+    switch i
+      when 0 then new RGB v, z, x
+      when 1 then new RGB y, v, x
+      when 2 then new RGB x, v, z
+      when 3 then new RGB x, y, v
+      when 4 then new RGB z, x, v
+      when 5 then new RGB v, x, y
+
+  toHex: ->
+    @toRGB().toHex()
+
+
+
+
+#package sc.ript.utils
+
+class ByteArray
+
+  @BlobBuilder: window.BlobBuilder or window.WebKitBlobBuilder or window.MozBlobBuilder
+
+  @fromDataURL: (dataURL) ->
+    mimeString = dataURL.split(',')[0].split(':')[1].split(';')[0]
+    byteString = atob dataURL.split(',')[1]
+
+    ab = new ArrayBuffer byteString.length
+    ia = new Uint8Array ab
+    for i in [0...byteString.length] by 1
+      ia[i] = byteString.charCodeAt i
+
+    if @BlobBuilder?
+      bb = new ByteArray.BlobBuilder
+      bb.append ab
+      new ByteArray bb.getBlob mimeString
+    else
+      new ByteArray new Blob [ab], type: mimeString
+
+# for Chrome
+#      new ByteArray new Blob [ia], type: mimeString
+
+
+  constructor: (@data) ->
+
+  length: ->
+    @data.size
+
+
+#package sc.ript.filter
+
+class Filter
+
+  constructor: ->
+
+  run        : (imageData) ->
+    {width, height, data} = imageData
+    pixels = []
+    i = 0
+    for y in [0...height] by 1
+      pixels[y] = []
+      for x in [0...width] by 1
+        pixels[y][x] = [data[i], data[i + 1], data[i + 2], data[i + 3]]
+        i += 4
+    pixels
+
+    i = 0
+    for y in [0...height] by 1
+      for x in [0...width] by 1
+        p = @_evaluatePixel pixels, x, y, width, height
+        data[i] = p[0]
+        data[i + 1] = p[1]
+        data[i + 2] = p[2]
+        data[i + 3] = p[3]
+        i += 4
+
+
+  _evaluatePixel: (pixels, x, y, width, height) ->
+    pixels[y][x]
+
+
+
+#package sc.ript
+
+class path
+
+  @join: (pathes...) ->
+    pathes = pathes.join('/').replace(/\/{2,}/g, '/').split('/');
+    normalized = []
+    for path in pathes
+      switch path
+        when '.'
+          # do nothing
+          break
+        when '..'
+          last = normalized[normalized.length - 1]
+          if last? && last isnt '..'
+            normalized.pop()
+          else
+            normalized.push path
+          break
+        else
+          normalized.push path
+          break
+    return normalized.join '/'
+
+
+
+#package sc.ript.utils
+
+class NumberUtil
+
+  @RADIAN_PER_DEGREE: Math.PI / 180
+  @DEGREE_PER_RADIAN: 180 / Math.PI
+  @KB               : 1024
+  @MB               : @KB * @KB
+  @GB               : @MB * @KB
+  @TB               : @GB * @KB
+
+  @degree: (radian) ->
+    radian * @DEGREE_PER_RADIAN
+
+  @radian: (degree) ->
+    degree * @RADIAN_PER_DEGREE
+
+  @signify: (value, digit) ->
+    base = Math.pow 10, digit
+    (value * base >> 0) / base
+
+  @kb: (bytes) ->
+    bytes / @KB
+
+  @mb: (bytes) ->
+    bytes / @MB
+
+  @gb: (bytes) ->
+    bytes / @GB
+
+  @random: (a, b) ->
+    a + (b - a) * Math.random()
+
+
+
+#package sc.ript.geom
+
+class Matrix
+
+  constructor: (@m11 = 1, @m12 = 0, @m21 = 0, @m22 = 1, @tx = 0, @ty = 0) ->
+
+  translate  : (x = 0, y = 0) ->
+    @concat new Matrix 1, 0, 0, 1, x, y
+    @
+
+  scale: (x = 1, y = 1) ->
+    @concat new Matrix x, 0, 0, y, 0, 0
+    @
+
+  rotate: (theta) ->
+    s = Math.sin theta
+    c = Math.cos theta
+    @concat new Matrix c, s, -s, c, 0, 0
+    @
+
+  concat: (matrix) ->
+    { m11, m12, m21, m22, tx, ty } = @
+    @m11 = m11 * matrix.m11 + m12 * matrix.m21
+    @m12 = m11 * matrix.m12 + m12 * matrix.m22
+    @m21 = m21 * matrix.m11 + m22 * matrix.m21
+    @m22 = m21 * matrix.m12 + m22 * matrix.m22
+    @tx = tx * matrix.m11 + ty * matrix.m21 + matrix.tx
+    @ty = tx * matrix.m12 + ty * matrix.m22 + matrix.ty
+    @
+
+  invert: ->
+    { m11, m12, m21, m22, tx, ty } = @
+    d = m11 * m22 - m12 * m21
+    @m11 = m22 / d
+    @m12 = -m12 / d
+    @m21 = -m21 / d
+    @m22 = m11 / d
+    @m41 = (m21 * ty - m22 * tx) / d
+    @m42 = (m12 * tx - m11 * ty) / d
+    @
+
+
+#package sc.ript.deferred
+
+
+class DLoader
+
+  @loadData: (url, method = 'get', data = '') ->
+    d = new Deferred
+
+    if window.ActiveXObject?
+      try
+        xhr = new ActiveXObject 'Msxml2.XMLHTTP'
+      catch err
+        try
+          xhr = new ActiveXObject 'Microsoft.XMLHTTP'
+        catch err
+          throw new TypeError 'doesn\'t support XMLHttpRequest'
+    else if window.XMLHttpRequest
+      xhr = new XMLHttpRequest
+    else
+      throw new TypeError 'doesn\'t support XMLHttpRequest'
+
+    xhr.onerror = (err) ->
+      d.fail err
+    xhr.onreadystatechange = ->
+      unless xhr.readyState is 4
+        # progress
+        return
+      d.call xhr.responseText
+    xhr.open method, url, true
+    xhr.send data
+
+    d
+
+  @loadImage: (url) ->
+    d = new Deferred
+    image = new Image
+    image.onerror = (err) ->
+      d.fail err
+    image.onload = ->
+      d.call image
+    image.src = url
+    d
+
+  @loadFile: (file) ->
+    d = new Deferred
+    reader = new FileReader
+    reader.onerror = (err) ->
+      d.fail err
+    reader.onload = ->
+      d.call reader.result
+    reader.readAsDataURL file
+    d
+
+
+
 #package sc.ript.geom
 
 class Point
@@ -547,38 +712,38 @@ class Point
 
 
 
-#package sc.ript.utils
+#package sc.ript.color
 
-class NumberUtil
+class RGB
 
-  @RADIAN_PER_DEGREE: Math.PI / 180
-  @DEGREE_PER_RADIAN: 180 / Math.PI
-  @KB               : 1024
-  @MB               : @KB * @KB
-  @GB               : @MB * @KB
-  @TB               : @GB * @KB
+  @average: (rgbs...) ->
+    r = g = b = 0
+    for rgb in rgbs
+      r += rgb.r
+      g += rgb.g
+      b += rgb.b
+    length = rgbs.length
+    r /= length
+    g /= length
+    b /= length
+    new RGB r, g, b
 
-  @degree: (radian) ->
-    radian * @DEGREE_PER_RADIAN
 
-  @radian: (degree) ->
-    degree * @RADIAN_PER_DEGREE
+  constructor: (@r, @g, @b) ->
+    if arguments.length is 1
+      hex = r
+      @r = hex >> 16 & 0xff
+      @g = hex >> 8 & 0xff
+      @b = hex & 0xff
+    @normalize()
 
-  @signify: (value, digit) ->
-    base = Math.pow 10, digit
-    (value * base >> 0) / base
+  normalize: ->
+    @r &= 0xff
+    @g &= 0xff
+    @b &= 0xff
 
-  @kb: (bytes) ->
-    bytes / @KB
-
-  @mb: (bytes) ->
-    bytes / @MB
-
-  @gb: (bytes) ->
-    bytes / @GB
-
-  @random: (a, b) ->
-    a + (b - a) * Math.random()
+  toHex: ->
+    @r << 16 | @g << 8 | @b
 
 
 
@@ -755,161 +920,13 @@ class Rectangle
 
 
 
-#package sc.ript.deferred
+#package sc.ript.display
 
+class JointStyle
 
-class DLoader
-
-  @loadData: (url, method = 'get', data = '') ->
-    d = new Deferred
-
-    if window.ActiveXObject?
-      try
-        xhr = new ActiveXObject 'Msxml2.XMLHTTP'
-      catch err
-        try
-          xhr = new ActiveXObject 'Microsoft.XMLHTTP'
-        catch err
-          throw new TypeError 'doesn\'t support XMLHttpRequest'
-    else if window.XMLHttpRequest
-      xhr = new XMLHttpRequest
-    else
-      throw new TypeError 'doesn\'t support XMLHttpRequest'
-
-    xhr.onerror = (err) ->
-      d.fail err
-    xhr.onreadystatechange = ->
-      unless xhr.readyState is 4
-        # progress
-        return
-      d.call xhr.responseText
-    xhr.open method, url, true
-    xhr.send data
-
-    d
-
-  @loadImage: (url) ->
-    d = new Deferred
-    image = new Image
-    image.onerror = (err) ->
-      d.fail err
-    image.onload = ->
-      d.call image
-    image.src = url
-    d
-
-  @loadFile: (file) ->
-    d = new Deferred
-    reader = new FileReader
-    reader.onerror = (err) ->
-      d.fail err
-    reader.onload = ->
-      d.call reader.result
-    reader.readAsDataURL file
-    d
-
-
-
-#package sc.ript
-
-class path
-
-  @join: (pathes...) ->
-    pathes = pathes.join('/').replace(/\/{2,}/g, '/').split('/');
-    normalized = []
-    for path in pathes
-      switch path
-        when '.'
-          # do nothing
-          break
-        when '..'
-          last = normalized[normalized.length - 1]
-          if last? && last isnt '..'
-            normalized.pop()
-          else
-            normalized.push path
-          break
-        else
-          normalized.push path
-          break
-    return normalized.join '/'
-
-
-
-#package sc.ript.color
-
-class RGB
-
-  @average: (rgbs...) ->
-    r = g = b = 0
-    for rgb in rgbs
-      r += rgb.r
-      g += rgb.g
-      b += rgb.b
-    length = rgbs.length
-    r /= length
-    g /= length
-    b /= length
-    new RGB r, g, b
-
-
-  constructor: (@r, @g, @b) ->
-    if arguments.length is 1
-      hex = r
-      @r = hex >> 16 & 0xff
-      @g = hex >> 8 & 0xff
-      @b = hex & 0xff
-    @normalize()
-
-  normalize: ->
-    @r &= 0xff
-    @g &= 0xff
-    @b &= 0xff
-
-  toHex: ->
-    @r << 16 | @g << 8 | @b
-
-
-
-#package sc.ript.utils
-
-class ByteArray
-
-  @BlobBuilder: window.BlobBuilder or window.WebKitBlobBuilder or window.MozBlobBuilder
-
-  @fromDataURL: (dataURL) ->
-    mimeString = dataURL.split(',')[0].split(':')[1].split(';')[0]
-    byteString = atob dataURL.split(',')[1]
-
-    ab = new ArrayBuffer byteString.length
-    ia = new Uint8Array ab
-    for i in [0...byteString.length] by 1
-      ia[i] = byteString.charCodeAt i
-
-    if @BlobBuilder?
-      bb = new ByteArray.BlobBuilder
-      bb.append ab
-      new ByteArray bb.getBlob mimeString
-    else
-      new ByteArray new Blob [ab], type: mimeString
-
-# for Chrome
-#      new ByteArray new Blob [ia], type: mimeString
-
-
-  constructor: (@data) ->
-
-  length: ->
-    @data.size
-
-
-#package sc.ript.events
-
-
-class Event
-
-  constructor: (@type, @data) ->
-
+  @BEVEL: 'bevel'
+  @MITER: 'miter'
+  @ROUND: 'round'
 
 class Type
 
@@ -973,7 +990,7 @@ class Type
 
 
 
-#package sc.ript.events
+#package sc.ript.event
 
 
 class EventEmitter
@@ -1045,6 +1062,15 @@ class EventEmitter
         , 0
 
     @
+
+#package sc.ript.filter
+
+class KernelFilter extends Filter
+
+  constructor: ->
+    super()
+
+
 
 #package sc.ript.ui
 
@@ -1202,6 +1228,15 @@ class Button extends EventEmitter
 
 
 
+#package sc.ript.filter
+
+class BirateralFilter extends Filter
+
+  constructor: ->
+    super()
+
+
+
 #package sc.ript.display
 
 class Bitmap extends DisplayObject
@@ -1293,6 +1328,9 @@ class Bitmap extends DisplayObject
     rect = new Rectangle 0, 0, @width(), @height() unless rect?
     @_context.getImageData rect.x, rect.y, rect.width, rect.height
 
+  setPixels: (imageData) ->
+    @_context.putImageData imageData, 0, 0
+
   getPixel32: (x, y) ->
     {data: [r, g, b, a]} = @_context.getImageData x, y, 1, 1
     a << 24 | r << 16 | g << 8 | b
@@ -1300,6 +1338,12 @@ class Bitmap extends DisplayObject
   getPixel: (x, y) ->
     {data: [r, g, b]} = @_context.getImageData x, y, 1, 1
     r << 16 | g << 8 | b
+
+  filter: (filters...) ->
+    imageData = @getPixels()
+    for filter in filters
+      filter.run imageData
+    @setPixels imageData
 
 
 
@@ -1531,35 +1575,36 @@ window[k] = v for k, v of {
         "RGB": RGB
       },
       "display": {
+        "BlendMode": BlendMode,
         "CapsStyle": CapsStyle,
         "DisplayObject": DisplayObject,
         "GraphicsPathCommand": GraphicsPathCommand,
         "JointStyle": JointStyle,
-        "BlendMode": BlendMode,
         "Bitmap": Bitmap
       },
-      "events": {
-        "EventEmitter": EventEmitter,
-        "Event": Event
+      "event": {
+        "Event": Event,
+        "EventEmitter": EventEmitter
+      },
+      "utils": {
+        "ByteArray": ByteArray,
+        "NumberUtil": NumberUtil,
+        "Type": Type
       },
       "filter": {
         "Filter": Filter,
-        "KernelFilter": KernelFilter
+        "KernelFilter": KernelFilter,
+        "BirateralFilter": BirateralFilter
       },
+      "path": path,
       "geom": {
         "Matrix": Matrix,
         "Point": Point,
         "Rectangle": Rectangle
       },
-      "utils": {
-        "NumberUtil": NumberUtil,
-        "ByteArray": ByteArray,
-        "Type": Type
-      },
       "deferred": {
         "DLoader": DLoader
       },
-      "path": path,
       "ui": {
         "Button": Button
       }
