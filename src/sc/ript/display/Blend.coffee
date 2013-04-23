@@ -250,7 +250,7 @@ class Blend
       dr
       dg
       db
-      sa
+      da * sa / 0xff
     ]
 
 
