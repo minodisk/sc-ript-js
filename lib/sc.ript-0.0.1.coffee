@@ -1,4 +1,4 @@
-#package sc.ript.utils
+#package sc.ript.color
 
 class Color
 
@@ -345,6 +345,76 @@ class Blend
 
 
 #package sc.ript.color
+
+class HSV
+
+  constructor: (@h, @s, @v) ->
+    if arguments.length is 1
+      hex = h
+      rgb = new RGB hex
+      r = rgb.r / 255
+      g = rgb.g / 255
+      b = rgb.b / 255
+
+      h = s = v = 0
+      if r >= g then x = r else x = g
+      if b > x then x = b
+      if r <= g then y = r else y = g
+      if b < y then y = b
+      v = x
+      c = x - y
+      if x is 0
+        s = 0
+      else
+        s = c / x
+      if s isnt 0
+        if r is x
+          h = (g - b) / c
+        else
+          if g is x
+            h = 2 + (b - r) / c
+          else
+            if b is x
+              h = 4 + (r - g) / c
+        h = h * 60
+        if h < 0
+          h = h + 360
+      @h = h
+      @s = s
+      @v = v
+    @normalize()
+
+  normalize: ->
+    @s = if @s < 0 then 0 else if @s > 1 then 1 else @s
+    @v = if @v < 0 then 0 else if @v > 1 then 1 else @v
+    @h = @h % 360
+    @h += 360 if @h < 0
+
+  toRGB: ->
+    @normalize()
+    {h, s, v} = @
+    h /= 60
+    i = h >> 0
+    x = v * (1 - s)
+    y = v * (1 - s * (h - 1))
+    z = v * (1 - s * (1 - h + i))
+    x = x * 0xff >> 0
+    y = y * 0xff >> 0
+    z = z * 0xff >> 0
+    v = v * 0xff >> 0
+    switch i
+      when 0 then new RGB v, z, x
+      when 1 then new RGB y, v, x
+      when 2 then new RGB x, v, z
+      when 3 then new RGB x, y, v
+      when 4 then new RGB z, x, v
+      when 5 then new RGB v, x, y
+
+  toHex: ->
+    @toRGB().toHex()
+
+
+
 
 #package sc.ript.events
 
@@ -816,14 +886,25 @@ class path
 
 
 
-#package sc.ript.utils
+#package sc.ript.color
 
 class RGB
 
-  constructor: (hex) ->
-    @r = hex >> 16 & 0xff
-    @g = hex >> 8 & 0xff
-    @b = hex & 0xff
+  constructor: (@r, @g, @b) ->
+    if arguments.length is 1
+      hex = r
+      @r = hex >> 16 & 0xff
+      @g = hex >> 8 & 0xff
+      @b = hex & 0xff
+    @normalize()
+
+  normalize: ->
+    @r &= 0xff
+    @g &= 0xff
+    @b &= 0xff
+
+  toHex: ->
+    @r << 16 | @g << 8 | @b
 
 
 
@@ -1189,6 +1270,17 @@ class Bitmap extends DisplayObject
     rect = new Rectangle 0, 0, @width(), @height() unless rect?
     @_context.getImageData rect.x, rect.y, rect.width, rect.height
 
+  getPixel32: (x, y) ->
+    imageData = @_context.getImageData x, y, 1, 1
+    [r, g, b, a] = imageData.data
+    a << 24 | r << 16 | g << 8 | b
+
+  getPixel: (x, y) ->
+    imageData = @_context.getImageData x, y, 1, 1
+    [r, g, b] = imageData.data
+    r << 16 | g << 8 | b
+
+
 
   ##############################################################################
   # Graphics API
@@ -1293,7 +1385,6 @@ class Bitmap extends DisplayObject
 #      c = commands.shift()
 #      commands.reverse()
 #      commands.unshift c
-
     @_context.beginPath()
     i = 0
     for command in commands
@@ -1307,7 +1398,7 @@ class Bitmap extends DisplayObject
         when GraphicsPathCommand.CUBIC_CURVE_TO
           @_context.bezierCurveTo data[i++], data[i++], data[i++], data[i++], data[i++], data[i++]
     # Close path when start and end is equal
-#    if data[0] is data[data.length - 2] and data[1] is data[data.length - 1]
+    #    if data[0] is data[data.length - 2] and data[1] is data[data.length - 1]
 
     @_context.closePath()
     @_render()
@@ -1413,12 +1504,10 @@ class Bitmap extends DisplayObject
 window[k] = v for k, v of {
   "sc": {
     "ript": {
-      "utils": {
+      "color": {
         "Color": Color,
-        "NumberUtil": NumberUtil,
-        "RGB": RGB,
-        "ByteArray": ByteArray,
-        "Type": Type
+        "HSV": HSV,
+        "RGB": RGB
       },
       "display": {
         "BlendMode": BlendMode,
@@ -1429,9 +1518,6 @@ window[k] = v for k, v of {
         "JointStyle": JointStyle,
         "Bitmap": Bitmap
       },
-      "color": {
-        "Color": Color
-      },
       "events": {
         "Event": Event,
         "EventEmitter": EventEmitter
@@ -1440,6 +1526,11 @@ window[k] = v for k, v of {
         "Matrix": Matrix,
         "Point": Point,
         "Rectangle": Rectangle
+      },
+      "utils": {
+        "NumberUtil": NumberUtil,
+        "ByteArray": ByteArray,
+        "Type": Type
       },
       "deferred": {
         "DLoader": DLoader

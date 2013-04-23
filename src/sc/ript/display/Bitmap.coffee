@@ -89,6 +89,17 @@ class Bitmap extends DisplayObject
     rect = new Rectangle 0, 0, @width(), @height() unless rect?
     @_context.getImageData rect.x, rect.y, rect.width, rect.height
 
+  getPixel32: (x, y) ->
+    imageData = @_context.getImageData x, y, 1, 1
+    [r, g, b, a] = imageData.data
+    a << 24 | r << 16 | g << 8 | b
+
+  getPixel: (x, y) ->
+    imageData = @_context.getImageData x, y, 1, 1
+    [r, g, b] = imageData.data
+    r << 16 | g << 8 | b
+
+
 
   ##############################################################################
   # Graphics API
@@ -193,7 +204,6 @@ class Bitmap extends DisplayObject
 #      c = commands.shift()
 #      commands.reverse()
 #      commands.unshift c
-
     @_context.beginPath()
     i = 0
     for command in commands
@@ -207,7 +217,7 @@ class Bitmap extends DisplayObject
         when GraphicsPathCommand.CUBIC_CURVE_TO
           @_context.bezierCurveTo data[i++], data[i++], data[i++], data[i++], data[i++], data[i++]
     # Close path when start and end is equal
-#    if data[0] is data[data.length - 2] and data[1] is data[data.length - 1]
+    #    if data[0] is data[data.length - 2] and data[1] is data[data.length - 1]
 
     @_context.closePath()
     @_render()
