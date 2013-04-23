@@ -141,7 +141,7 @@ class NumberUtil
 class Point
 
   @equals: (pt0, pt1) ->
-    pt0.x is pt1.x and pt0.y is pt1.y
+    pt0.equals pt1
 
   @dotProduct: (pt0, pt1) ->
     pt0.x * pt1.x + pt0.y * pt1.y
@@ -176,6 +176,9 @@ class Point
 
   clone: ->
     new Point @x, @y
+
+  equals: (pt) ->
+    @x is pt.x and @y is pt.y
 
   add: (pt) ->
     new Point @x + pt.x, @y + pt.y
@@ -824,7 +827,9 @@ class Bitmap extends DisplayObject
     @canvas.height = value
 
 
+  ##############################################################################
   # Binary API
+  ##############################################################################
 
   encodeAsPNG: ->
     ByteArray.fromDataURL @canvas.toDataURL 'image/png'
@@ -833,7 +838,9 @@ class Bitmap extends DisplayObject
     ByteArray.fromDataURL @canvas.toDataURL 'image/jpeg', quality
 
 
+  ##############################################################################
   # BitmapData API
+  ##############################################################################
 
   clear: ->
     @canvas.width = @canvas.width
@@ -848,7 +855,9 @@ class Bitmap extends DisplayObject
     @_context.setTransform 1, 0, 0, 1, 0, 0
 
 
+  ##############################################################################
   # Graphics API
+  ##############################################################################
 
   lineStyle: (thickness = 1, color = 0, alpha = 1, capsStyle = CapsStyle.NONE, jointStyle = JointStyle.BEVEL, miterLimit = 10) ->
     @_context.lineWidth = thickness
@@ -875,6 +884,21 @@ class Bitmap extends DisplayObject
     @_context.rect x, y, width, height
     @_context.closePath()
     @_render()
+#    r = x + width
+#    b = y + height
+#    @drawPath [
+#      GraphicsPathCommand.MOVE_TO
+#      GraphicsPathCommand.LINE_TO
+#      GraphicsPathCommand.LINE_TO
+#      GraphicsPathCommand.LINE_TO
+#      GraphicsPathCommand.LINE_TO
+#    ], [
+#      x, y
+#      r, y
+#      r, b
+#      x, b
+#      x, y
+#    ]
 
   drawCircle: (x, y, radius, clockwise) ->
     @_context.beginPath()
@@ -890,7 +914,13 @@ class Bitmap extends DisplayObject
     y += height
     handleWidth = width * Bitmap._ELLIPSE_CUBIC_BEZIER_HANDLE
     handleHeight = height * Bitmap._ELLIPSE_CUBIC_BEZIER_HANDLE
-    @drawPath [0, 3, 3, 3, 3], [
+    @drawPath [
+      GraphicsPathCommand.MOVE_TO
+      GraphicsPathCommand.CUBIC_CURVE_TO
+      GraphicsPathCommand.CUBIC_CURVE_TO
+      GraphicsPathCommand.CUBIC_CURVE_TO
+      GraphicsPathCommand.CUBIC_CURVE_TO
+    ], [
       x + width, y
       x + width, y + handleHeight, x + handleWidth, y + height, x, y + height
       x - handleWidth, y + height, x - width, y + handleHeight, x - width, y
@@ -905,29 +935,29 @@ class Bitmap extends DisplayObject
     @_context.bezierCurveTo x1, y1, x2, y2, x3, y3
 
   drawPath: (commands, data, clockwise = 0) ->
-    rect = new Rectangle data[0], data[1], 0, 0
-    for i in [1...data.length / 2] by 1
-      j = i * 2
-      rect.contain data[j], data[j + 1]
+#    rect = new Rectangle data[0], data[1], 0, 0
+#    for i in [1...data.length / 2] by 1
+#      j = i * 2
+#      rect.contain data[j], data[j + 1]
 
-    if clockwise < 0
-      d = []
-      i = 0
-      for command in commands
-        switch command
-          when 0, 1 then d.unshift data[i++], data[i++]
-          when 2
-            i += 4
-            d.unshift data[i - 2], data[i - 1], data[i - 4], data[i - 3]
-          when 3
-            i += 6
-            d.unshift data[i - 2], data[i - 1], data[i - 4], data[i - 3], data[i - 6], data[i - 5]
-      data = d
-
-      commands = commands.slice()
-      c = commands.shift()
-      commands.reverse()
-      commands.unshift c
+#    if clockwise < 0
+#      d = []
+#      i = 0
+#      for command in commands
+#        switch command
+#          when 0, 1 then d.unshift data[i++], data[i++]
+#          when 2
+#            i += 4
+#            d.unshift data[i - 2], data[i - 1], data[i - 4], data[i - 3]
+#          when 3
+#            i += 6
+#            d.unshift data[i - 2], data[i - 1], data[i - 4], data[i - 3], data[i - 6], data[i - 5]
+#      data = d
+#
+#      commands = commands.slice()
+#      c = commands.shift()
+#      commands.reverse()
+#      commands.unshift c
 
     @_context.beginPath()
     i = 0
@@ -942,9 +972,9 @@ class Bitmap extends DisplayObject
         when GraphicsPathCommand.CUBIC_CURVE_TO
           @_context.bezierCurveTo data[i++], data[i++], data[i++], data[i++], data[i++], data[i++]
     # Close path when start and end is equal
-    if data[0] is data[data.length - 2] and data[1] is data[data.length - 1]
-      @_context.closePath()
+#    if data[0] is data[data.length - 2] and data[1] is data[data.length - 1]
 
+    @_context.closePath()
     @_render()
 
   drawRoundRect: (x, y, width, height, ellipseW, ellipseH = ellipseW, clockwise = 0) ->
@@ -999,7 +1029,7 @@ class Bitmap extends DisplayObject
 
     closed = points[0].equals points[points.length - 1]
     pointsLength = points.length
-    jLen = closed ? pointsLength: pointsLength - 1
+    jLen = if closed then pointsLength else pointsLength - 1
     iLen = interpolation
     for j in [0...jLen] by 1
       p0 = points[@_normalizeIndex(j - 1, pointsLength, closed)]
@@ -1007,12 +1037,12 @@ class Bitmap extends DisplayObject
       p2 = points[@_normalizeIndex(j + 1, pointsLength, closed)]
       p3 = points[@_normalizeIndex(j + 2, pointsLength, closed)]
       if j is jLen - 1
-        iLen = closed ? 1: interpolation + 1
+        iLen = if closed then 1 else interpolation + 1
       for i in [0...iLen] by 1
         commands.push GraphicsPathCommand.LINE_TO
         data.push(
-          _interpolateSpline(p0.x, p1.x, p2.x, p3.x, i / interpolation),
-          _interpolateSpline(p0.y, p1.y, p2.y, p3.y, i / interpolation)
+          @_interpolateSpline(p0.x, p1.x, p2.x, p3.x, i / interpolation),
+          @_interpolateSpline(p0.y, p1.y, p2.y, p3.y, i / interpolation)
         )
     commands[0] = GraphicsPathCommand.MOVE_TO
 
@@ -1022,7 +1052,7 @@ class Bitmap extends DisplayObject
     unless closed
       if index < 0 then 0 else if index >= pointsLength then pointsLength - 1 else index
     else
-      if index < 0 then pointsLength - 1 + index else if index >= pointsLength ? 1 + (index - pointsLength) then index
+      if index < 0 then pointsLength - 1 + index else if index >= pointsLength then 1 + (index - pointsLength) else index
 
   _interpolateSpline: (p0, p1, p2, p3, t) ->
     t2 = t * t

@@ -3,7 +3,7 @@
 class Point
 
   @equals: (pt0, pt1) ->
-    pt0.x is pt1.x and pt0.y is pt1.y
+    pt0.equals pt1
 
   @dotProduct: (pt0, pt1) ->
     pt0.x * pt1.x + pt0.y * pt1.y
@@ -38,6 +38,9 @@ class Point
 
   clone: ->
     new Point @x, @y
+
+  equals: (pt) ->
+    @x is pt.x and @y is pt.y
 
   add: (pt) ->
     new Point @x + pt.x, @y + pt.y
