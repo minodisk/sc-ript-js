@@ -82,87 +82,114 @@ class Event
   constructor: (@type, @data) ->
 
 
-#package sc.ript.events
-
-
-class EventEmitter
-
-  constructor: ->
-    @_receivers = {}
-
-  on: (type, listener, useCapture = false, priority = 0) ->
-    if typeof listener isnt 'function'
-      throw new TypeError 'listener is\'t Function'
-
-    # typeに対応するレシーバのリストが存在するかをチェック
-    unless @_receivers[type]?
-      @_receivers[type] = []
-
-    receivers = @_receivers[type]
-
-    # リスナが格納済みではないかをチェック
-    i = receivers.length
-    while i--
-      receiver = reveicers[i]
-      if receiver.listener is listener
-        return @
-
-    # リスナを格納し優先度順にソート
-    receivers.push
-      listener  : listener
-      useCapture: useCapture
-      priority  : priority
-    receivers.sort (a, b) ->
-      b.priority - a.priority
-
-    @
-
-  off: (type, listener) ->
-    receivers = @_receivers[type]
-
-    # typeに対応するレシーバが登録されているかをチェック
-    unless receivers
-      return @
-
-    # 格納されていればリストから取り除く
-    i = receivers.length
-    while i--
-      if receivers[i].listener is listener
-        receivers.splice i, 1
-      if receivers.length is 0
-        delete @_receivers[type]
-
-    @
-
-  emit: (event) ->
-    receivers = @_receivers[event.type]
-
-    # typeに対応するレシーバが登録されているかをチェック
-    unless receivers?
-      return @
-
-    event.currentTarget = @
-
-    # 全てのレシーバのリスナをイベントオブジェクトを引数としてコールする
-    # リスナはEventEmitterオブジェクトで束縛される
-    for receiver in receivers
-      do (receiver) =>
-        setTimeout =>
-          if event._isPropagationStoppedImmediately
-            return
-          receiver.listener.call @, event
-        , 0
-
-    @
-
 #package sc.ript.display
 
-class CapsStyle
+class DisplayObject
 
-  @NONE  : 'butt'
-  @BUTT  : 'butt'
-  @ROUND : 'round'
-  @SQUARE: 'square'
+  @_RADIAN_PER_DEGREE: Math.PI / 180
+
+  constructor: ->
+    @x = @y = @rotation = 0
+    @scaleX = @scaleY = 1
+
+  matrix: ->
+    new Matrix()
+      .scale(@scaleX, @scaleY)
+      .rotate(@rotation * DisplayObject._RADIAN_PER_DEGREE)
+      .translate(@x, @y)
+
+
+
+
+#package sc.ript.utils
+
+class NumberUtil
+
+  @RADIAN_PER_DEGREE: Math.PI / 180
+  @DEGREE_PER_RADIAN: 180 / Math.PI
+  @KB               : 1024
+  @MB               : @KB * @KB
+  @GB               : @MB * @KB
+  @TB               : @GB * @KB
+
+  @degree: (radian) ->
+    radian * @DEGREE_PER_RADIAN
+
+  @radian: (degree) ->
+    degree * @RADIAN_PER_DEGREE
+
+  @signify: (value, digit) ->
+    base = Math.pow 10, digit
+    (value * base >> 0) / base
+
+  @kb: (bytes) ->
+    bytes / @KB
+
+  @mb: (bytes) ->
+    bytes / @MB
+
+  @gb: (bytes) ->
+    bytes / @GB
+
+  @random: (a, b) ->
+    a + (b - a) * Math.random()
+
+
+
+#package sc.ript.geom
+
+class Point
+
+  @equals: (pt0, pt1) ->
+    pt0.x is pt1.x and pt0.y is pt1.y
+
+  @dotProduct: (pt0, pt1) ->
+    pt0.x * pt1.x + pt0.y * pt1.y
+
+  @angle: (pt0, pt1) ->
+    pt1.subtract(pt0).angle()
+
+  @distance: (pt0, pt1) ->
+    pt1.subtract(pt0).length()
+
+  @interpolate: (pt0, pt1, ratio) ->
+    pt0.add pt1.subtract(pt0).multiply(ratio)
+
+
+  constructor: (x = 0, y = 0) ->
+    @x = +x
+    @y = +y
+
+  angle      : (value) ->
+    return Math.atan2 @y, @x unless value?
+
+    length = @length()
+    @x = length * Math.cos value
+    @y = length * Math.sin value
+
+  length: (value) ->
+    return Math.sqrt @x * @x + @y * @y unless value?
+
+    angle = @angle()
+    @x = value * Math.cos angle
+    @y = value * Math.sin angle
+
+  clone: ->
+    new Point @x, @y
+
+  add: (pt) ->
+    new Point @x + pt.x, @y + pt.y
+
+  subtract: (pt) ->
+    new Point @x - pt.x, @y - pt.y
+
+  multiply: (value) ->
+    new Point @x * value, @y * value
+
+  divide: (value) ->
+    new Point @x / value, @y / value
+
+
 
 #package sc.ript.geom
 
@@ -363,40 +390,26 @@ class path
 
 
 
-#package sc.ript.utils
+class Color
 
-class NumberUtil
+  @toCSSString: (color, alpha = 1) ->
+    r = color >> 16 & 0xff
+    g = color >> 8 & 0xff
+    b = color & 0xff
+    alpha = if alpha < 0 then 0 else if alpha > 1 then 1 else alpha
+    if alpha is 1
+      "rgb(#{r},#{g},#{b})"
+    else
+      "rgba(#{r},#{g},#{b},#{alpha})"
 
-  @RADIAN_PER_DEGREE: Math.PI / 180
-  @DEGREE_PER_RADIAN: 180 / Math.PI
-  @KB               : 1024
-  @MB               : @KB * @KB
-  @GB               : @MB * @KB
-  @TB               : @GB * @KB
+#package sc.ript.display
 
-  @degree: (radian) ->
-    radian * @DEGREE_PER_RADIAN
+class CapsStyle
 
-  @radian: (degree) ->
-    degree * @RADIAN_PER_DEGREE
-
-  @signify: (value, digit) ->
-    base = Math.pow 10, digit
-    (value * base >> 0) / base
-
-  @kb: (bytes) ->
-    bytes / @KB
-
-  @mb: (bytes) ->
-    bytes / @MB
-
-  @gb: (bytes) ->
-    bytes / @GB
-
-  @random: (a, b) ->
-    a + (b - a) * Math.random()
-
-
+  @NONE  : 'butt'
+  @BUTT  : 'butt'
+  @ROUND : 'round'
+  @SQUARE: 'square'
 
 #package sc.ript.utils
 
@@ -430,200 +443,78 @@ class ByteArray
     @data.size
 
 
-class Color
-
-  @toCSSString: (color, alpha = 1) ->
-    r = color >> 16 & 0xff
-    g = color >> 8 & 0xff
-    b = color & 0xff
-    alpha = if alpha < 0 then 0 else if alpha > 1 then 1 else alpha
-    if alpha is 1
-      "rgb(#{r},#{g},#{b})"
-    else
-      "rgba(#{r},#{g},#{b},#{alpha})"
-
-#package sc.ript.display
-
-class Bitmap
-
-  @_PI_2                       : Math.PI * 2
-  @_PI_OVER_2                  : Math.PI / 2
-  @_ELLIPSE_CUBIC_BEZIER_HANDLE: (Math.SQRT2 - 1) * 4 / 3
-
-  constructor: (width = 320, height = 320) ->
-    @canvas = document.createElement 'canvas'
-    @width width
-    @height height
-    @_context = @canvas.getContext '2d'
-    @_context.fillStyle = @_context.strokeStyle = 'rgba(0,0,0,0)'
-
-  clone: ->
-    bitmap = new Bitmap @width(), @height()
-    bitmap.draw @
-    bitmap
-
-  width: (value) ->
-    return @canvas.width unless value?
-    @canvas.width = value
-
-  height: (value) ->
-    return @canvas.height unless value?
-    @canvas.height = value
-
-  clear: ->
-    @canvas.width = @canvas.width
-    @_context.fillStyle = @_context.strokeStyle = 'rgba(0,0,0,0)'
-
-  draw: (image, matrix) ->
-    if matrix?
-      console.log matrix.m11, matrix.m12, matrix.m21, matrix.m22, matrix.tx, matrix.ty
-      @_context.setTransform matrix.m11, matrix.m12, matrix.m21, matrix.m22, matrix.tx, matrix.ty
-    if image instanceof Bitmap
-      image = image.canvas
-    @_context.drawImage image, 0, 0
-
-  encodeAsPNG: ->
-    ByteArray.fromDataURL @canvas.toDataURL 'image/png'
-
-  encodeAsJPG: (quality = 0.8) ->
-    ByteArray.fromDataURL @canvas.toDataURL 'image/jpeg', quality
+#package sc.ript.events
 
 
-  # Graphics API
+class EventEmitter
 
-  lineStyle: (thickness = 1, color = 0, alpha = 1, capsStyle = CapsStyle.NONE, jointStyle = JointStyle.BEVEL, miterLimit = 10) ->
-    @_context.lineWidth = thickness
-    @_context.strokeStyle = Color.toCSSString color, alpha
-    @_context.lineCaps = capsStyle
-    @_context.lineJoin = jointStyle
-    @_context.miterLimit = miterLimit
+  constructor: ->
+    @_receivers = {}
 
-  beginFill: (color = 0, alpha = 1) ->
-    @_context.fillStyle = Color.toCSSString color, alpha
+  on: (type, listener, useCapture = false, priority = 0) ->
+    if typeof listener isnt 'function'
+      throw new TypeError 'listener is\'t Function'
 
-  moveTo: (x, y) ->
-    @_context.moveTo x, y
+    # typeに対応するレシーバのリストが存在するかをチェック
+    unless @_receivers[type]?
+      @_receivers[type] = []
 
-  lineTo: (x, y) ->
-    @_context.lineTo x, y
+    receivers = @_receivers[type]
 
-  drawRect: (x, y, width, height) ->
-    @_context.rect x, y, width, height
+    # リスナが格納済みではないかをチェック
+    i = receivers.length
+    while i--
+      receiver = reveicers[i]
+      if receiver.listener is listener
+        return @
 
-  drawCircle: (x, y, radius, clockwise) ->
-    @_context.moveTo x + radius, y
-    @_context.arc x, y, radius, 0, Bitmap._PI_2, clockwise < 0
+    # リスナを格納し優先度順にソート
+    receivers.push
+      listener  : listener
+      useCapture: useCapture
+      priority  : priority
+    receivers.sort (a, b) ->
+      b.priority - a.priority
 
-  drawEllipse: (x, y, width, height, clockwise = 0) ->
-    width /= 2
-    height /= 2
-    x += width
-    y += height
-    handleWidth = width * Bitmap._ELLIPSE_CUBIC_BEZIER_HANDLE
-    handleHeight = height * Bitmap._ELLIPSE_CUBIC_BEZIER_HANDLE
-    @drawPath [0, 3, 3, 3, 3], [
-      x + width, y
-      x + width, y + handleHeight, x + handleWidth, y + height, x, y + height
-      x - handleWidth, y + height, x - width, y + handleHeight, x - width, y
-      x - width, y - handleHeight, x - handleWidth, y - height, x, y - height
-      x + handleWidth, y - height, x + width, y - handleHeight, x + width, y
-    ], clockwise
+    @
 
-  curveTo: (x1, y1, x2, y2) ->
-    @_context.quadraticCurveTo x1, y1, x2, y2
+  off: (type, listener) ->
+    receivers = @_receivers[type]
 
-  cubicCurveTo: (x1, y1, x2, y2, x3, y3) ->
-    @_context.bezierCurveTo x1, y1, x2, y2, x3, y3
+    # typeに対応するレシーバが登録されているかをチェック
+    unless receivers
+      return @
 
-  drawPath: (commands, data, clockwise = 0) ->
-    rect = new Rectangle data[0], data[1], 0, 0
-    for i in [1...data.length / 2] by 1
-      j = i * 2
-      rect.contain data[j], data[j + 1]
+    # 格納されていればリストから取り除く
+    i = receivers.length
+    while i--
+      if receivers[i].listener is listener
+        receivers.splice i, 1
+      if receivers.length is 0
+        delete @_receivers[type]
 
-    if clockwise < 0
-      d = []
-      i = 0
-      for command in commands
-        switch command
-          when 0, 1 then d.unshift data[i++], data[i++]
-          when 2
-            i += 4
-            d.unshift data[i - 2], data[i - 1], data[i - 4], data[i - 3]
-          when 3
-            i += 6
-            d.unshift data[i - 2], data[i - 1], data[i - 4], data[i - 3], data[i - 6], data[i - 5]
-      data = d
+    @
 
-      commands = commands.slice()
-      c = commands.shift()
-      commands.reverse()
-      commands.unshift c
+  emit: (event) ->
+    receivers = @_receivers[event.type]
 
-    i = 0
-    for command in commands
-      switch command
-        when GraphicsPathCommand.MOVE_TO
-          @_context.moveTo data[i++], data[i++]
-        when GraphicsPathCommand.LINE_TO
-          @_context.lineTo data[i++], data[i++]
-        when GraphicsPathCommand.CURVE_TO
-          @_context.quadraticCurveTo data[i++], data[i++], data[i++], data[i++]
-        when GraphicsPathCommand.CUBIC_CURVE_TO
-          @_context.bezierCurveTo data[i++], data[i++], data[i++], data[i++], data[i++], data[i++]
+    # typeに対応するレシーバが登録されているかをチェック
+    unless receivers?
+      return @
 
-    # Close path when start and end is equal
-    if data[0] is data[data.length - 2] and data[1] is data[data.length - 1]
-      @_context.closePath()
+    event.currentTarget = @
 
-    @_context.fill()
-    @_context.stroke()
+    # 全てのレシーバのリスナをイベントオブジェクトを引数としてコールする
+    # リスナはEventEmitterオブジェクトで束縛される
+    for receiver in receivers
+      do (receiver) =>
+        setTimeout =>
+          if event._isPropagationStoppedImmediately
+            return
+          receiver.listener.call @, event
+        , 0
 
-  drawRoundRect: (x, y, width, height, ellipseW, ellipseH = ellipseW, clockwise = 0) ->
-    @drawPath [0, 1, 2, 1, 2, 1, 2, 1, 2], [
-      x + ellipseW, y
-      x + width - ellipseW, y
-      x + width, y, x + width, y + ellipseH
-      x + width, y + height - ellipseH
-      x + width, y + height, x + width - ellipseW, y + height
-      x + ellipseW, y + height
-      x, y + height, x, y + height - ellipseH
-      x, y + ellipseH
-      x, y, x + ellipseW, y
-    ], clockwise
-
-  drawRegularPolygon: (x, y, radius, length = 3, clockwise = 0) ->
-    commands = []
-    data = []
-    unitRotation = Bitmap._PI_2 / length
-    for i in [0..length]
-      commands.push if i is 0 then 0 else 1
-      rotation = -Bitmap._PI_OVER_2 + unitRotation * i
-      data.push x + radius * Math.cos(rotation), y + radius * Math.sin(rotation)
-    @drawPath commands, data, clockwise
-
-  drawRegularStar: (x, y, outer, length = 5, clockwise = 0) ->
-    cos = Math.cos Math.PI / length
-    @drawStar x, y, outer, outer * (2 * cos - 1 / cos), length, clockwise
-
-  drawStar: (x, y, outer, inner, length = 5, clockwise = 0) ->
-    commands = []
-    data = []
-    unitRotation = Math.PI / length
-    for i in [0..length * 2] by 1
-      commands.push if i is 0 then 0 else 1
-      radius = if (i & 1) is 0 then outer else inner
-      rotation = -Bitmap._PI_OVER_2 + unitRotation * i
-      data.push x + radius * Math.cos(rotation), y + radius * Math.sin(rotation)
-    @drawPath commands, data, clockwise
-
-
-
-
-
-
-
-
+    @
 
 class Type
 
@@ -689,55 +580,44 @@ class Type
 
 #package sc.ript.geom
 
-class Point
+class Matrix
 
-  @equals: (pt0, pt1) ->
-    pt0.x is pt1.x and pt0.y is pt1.y
+  constructor: (@m11 = 1, @m12 = 0, @m21 = 0, @m22 = 1, @tx = 0, @ty = 0) ->
 
-  @dotProduct: (pt0, pt1) ->
-    pt0.x * pt1.x + pt0.y * pt1.y
+  translate  : (x = 0, y = 0) ->
+    @concat new Matrix 1, 0, 0, 1, x, y
+    @
 
-  @angle: (pt0, pt1) ->
-    pt1.subtract(pt0).angle()
+  scale: (x = 1, y = 1) ->
+    @concat new Matrix x, 0, 0, y, 0, 0
+    @
 
-  @distance: (pt0, pt1) ->
-    pt1.subtract(pt0).length()
+  rotate: (theta) ->
+    s = Math.sin theta
+    c = Math.cos theta
+    @concat new Matrix c, s, -s, c, 0, 0
+    @
 
-  @interpolate: (pt0, pt1, ratio) ->
-    pt0.add pt1.subtract(pt0).multiply(ratio)
+  concat: (matrix) ->
+    { m11, m12, m21, m22, tx, ty } = @
+    @m11 = m11 * matrix.m11 + m12 * matrix.m21
+    @m12 = m11 * matrix.m12 + m12 * matrix.m22
+    @m21 = m21 * matrix.m11 + m22 * matrix.m21
+    @m22 = m21 * matrix.m12 + m22 * matrix.m22
+    @tx = tx * matrix.m11 + ty * matrix.m21 + matrix.tx
+    @ty = tx * matrix.m12 + ty * matrix.m22 + matrix.ty
+    @
 
-
-  constructor: (@x = 0, @y = 0) ->
-
-  angle      : (value) ->
-    return Math.atan2 @y, @x unless value?
-
-    length = @length()
-    @x = length * Math.cos value
-    @y = length * Math.sin value
-
-  length: (value) ->
-    return Math.sqrt @x * @x + @y * @y unless value?
-
-    angle = @angle()
-    @x = value * Math.cos angle
-    @y = value * Math.sin angle
-
-  clone: ->
-    new Point @x, @y
-
-  add: (pt) ->
-    new Point @x + pt.x, @y + pt.y
-
-  subtract: (pt) ->
-    new Point @x - pt.x, @y - pt.y
-
-  multiply: (value) ->
-    new Point @x * value, @y * value
-
-  divide: (value) ->
-    new Point @x / value, @y / value
-
+  invert: ->
+    { m11, m12, m21, m22, tx, ty } = @
+    d = m11 * m22 - m12 * m21
+    @m11 = m22 / d
+    @m12 = -m12 / d
+    @m21 = -m21 / d
+    @m22 = m11 / d
+    @m41 = (m21 * ty - m22 * tx) / d
+    @m42 = (m12 * tx - m11 * ty) / d
+    @
 
 
 #package sc.ript.ui
@@ -896,6 +776,275 @@ class Button extends EventEmitter
 
 
 
+#package sc.ript.display
+
+class Bitmap extends DisplayObject
+
+  @_PI_2                       : Math.PI * 2
+  @_PI_OVER_2                  : Math.PI / 2
+  @_ELLIPSE_CUBIC_BEZIER_HANDLE: (Math.SQRT2 - 1) * 4 / 3
+
+  constructor: (width = 320, height = 320, color = 0, alpha = 0) ->
+    super()
+
+    if width instanceof Bitmap
+      source = width
+      width = source.width()
+      height = source.height()
+    else
+      switch width.nodeName
+        when 'IMG', 'CANVAS'
+          source = width
+          width = source.width
+          height = source.height
+
+    @canvas = document.createElement 'canvas'
+    @width width
+    @height height
+    @_context = @canvas.getContext '2d'
+    @_context.strokeStyle = 'rgba(0,0,0,0)'
+    @beginFill color, alpha
+    @drawRect 0, 0, width, height
+    @endFill()
+
+    if source?
+      @draw source
+
+  clone: ->
+    bitmap = new Bitmap @width(), @height()
+    bitmap.draw @
+    bitmap
+
+  width: (value) ->
+    return @canvas.width unless value?
+    @canvas.width = value
+
+  height: (value) ->
+    return @canvas.height unless value?
+    @canvas.height = value
+
+
+  # Binary API
+
+  encodeAsPNG: ->
+    ByteArray.fromDataURL @canvas.toDataURL 'image/png'
+
+  encodeAsJPG: (quality = 0.8) ->
+    ByteArray.fromDataURL @canvas.toDataURL 'image/jpeg', quality
+
+
+  # BitmapData API
+
+  clear: ->
+    @canvas.width = @canvas.width
+    @_context.fillStyle = @_context.strokeStyle = 'rgba(0,0,0,0)'
+
+  draw: (image, matrix) ->
+    if image instanceof Bitmap
+      image = image.canvas
+    if matrix?
+      @_context.setTransform matrix.m11, matrix.m12, matrix.m21, matrix.m22, matrix.tx, matrix.ty
+    @_context.drawImage image, 0, 0
+    @_context.setTransform 1, 0, 0, 1, 0, 0
+
+
+  # Graphics API
+
+  lineStyle: (thickness = 1, color = 0, alpha = 1, capsStyle = CapsStyle.NONE, jointStyle = JointStyle.BEVEL, miterLimit = 10) ->
+    @_context.lineWidth = thickness
+    @_context.strokeStyle = Color.toCSSString color, alpha
+    @_context.lineCaps = capsStyle
+    @_context.lineJoin = jointStyle
+    @_context.miterLimit = miterLimit
+
+  beginFill: (color = 0, alpha = 1) ->
+    @_context.fillStyle = Color.toCSSString color, alpha
+
+  endFill: ->
+    @_context.closePath()
+    @_context.fillStyle = 'rgba(0,0,0,0)'
+
+  moveTo: (x, y) ->
+    @_context.moveTo x, y
+
+  lineTo: (x, y) ->
+    @_context.lineTo x, y
+
+  drawRect: (x, y, width, height) ->
+    @_context.beginPath()
+    @_context.rect x, y, width, height
+    @_context.closePath()
+    @_render()
+
+  drawCircle: (x, y, radius, clockwise) ->
+    @_context.beginPath()
+    @_context.moveTo x + radius, y
+    @_context.arc x, y, radius, 0, Bitmap._PI_2, clockwise < 0
+    @_context.closePath()
+    @_render()
+
+  drawEllipse: (x, y, width, height, clockwise = 0) ->
+    width /= 2
+    height /= 2
+    x += width
+    y += height
+    handleWidth = width * Bitmap._ELLIPSE_CUBIC_BEZIER_HANDLE
+    handleHeight = height * Bitmap._ELLIPSE_CUBIC_BEZIER_HANDLE
+    @drawPath [0, 3, 3, 3, 3], [
+      x + width, y
+      x + width, y + handleHeight, x + handleWidth, y + height, x, y + height
+      x - handleWidth, y + height, x - width, y + handleHeight, x - width, y
+      x - width, y - handleHeight, x - handleWidth, y - height, x, y - height
+      x + handleWidth, y - height, x + width, y - handleHeight, x + width, y
+    ], clockwise
+
+  curveTo: (x1, y1, x2, y2) ->
+    @_context.quadraticCurveTo x1, y1, x2, y2
+
+  cubicCurveTo: (x1, y1, x2, y2, x3, y3) ->
+    @_context.bezierCurveTo x1, y1, x2, y2, x3, y3
+
+  drawPath: (commands, data, clockwise = 0) ->
+    rect = new Rectangle data[0], data[1], 0, 0
+    for i in [1...data.length / 2] by 1
+      j = i * 2
+      rect.contain data[j], data[j + 1]
+
+    if clockwise < 0
+      d = []
+      i = 0
+      for command in commands
+        switch command
+          when 0, 1 then d.unshift data[i++], data[i++]
+          when 2
+            i += 4
+            d.unshift data[i - 2], data[i - 1], data[i - 4], data[i - 3]
+          when 3
+            i += 6
+            d.unshift data[i - 2], data[i - 1], data[i - 4], data[i - 3], data[i - 6], data[i - 5]
+      data = d
+
+      commands = commands.slice()
+      c = commands.shift()
+      commands.reverse()
+      commands.unshift c
+
+    @_context.beginPath()
+    i = 0
+    for command in commands
+      switch command
+        when GraphicsPathCommand.MOVE_TO
+          @_context.moveTo data[i++], data[i++]
+        when GraphicsPathCommand.LINE_TO
+          @_context.lineTo data[i++], data[i++]
+        when GraphicsPathCommand.CURVE_TO
+          @_context.quadraticCurveTo data[i++], data[i++], data[i++], data[i++]
+        when GraphicsPathCommand.CUBIC_CURVE_TO
+          @_context.bezierCurveTo data[i++], data[i++], data[i++], data[i++], data[i++], data[i++]
+    # Close path when start and end is equal
+    if data[0] is data[data.length - 2] and data[1] is data[data.length - 1]
+      @_context.closePath()
+
+    @_render()
+
+  drawRoundRect: (x, y, width, height, ellipseW, ellipseH = ellipseW, clockwise = 0) ->
+    @drawPath [0, 1, 2, 1, 2, 1, 2, 1, 2], [
+      x + ellipseW, y
+      x + width - ellipseW, y
+      x + width, y, x + width, y + ellipseH
+      x + width, y + height - ellipseH
+      x + width, y + height, x + width - ellipseW, y + height
+      x + ellipseW, y + height
+      x, y + height, x, y + height - ellipseH
+      x, y + ellipseH
+      x, y, x + ellipseW, y
+    ], clockwise
+
+  drawRegularPolygon: (x, y, radius, length = 3, clockwise = 0) ->
+    commands = []
+    data = []
+    unitRotation = Bitmap._PI_2 / length
+    for i in [0..length]
+      commands.push if i is 0 then 0 else 1
+      rotation = -Bitmap._PI_OVER_2 + unitRotation * i
+      data.push x + radius * Math.cos(rotation), y + radius * Math.sin(rotation)
+    @drawPath commands, data, clockwise
+
+  drawRegularStar: (x, y, outer, length = 5, clockwise = 0) ->
+    cos = Math.cos Math.PI / length
+    @drawStar x, y, outer, outer * (2 * cos - 1 / cos), length, clockwise
+
+  drawStar: (x, y, outer, inner, length = 5, clockwise = 0) ->
+    commands = []
+    data = []
+    unitRotation = Math.PI / length
+    for i in [0..length * 2] by 1
+      commands.push if i is 0 then 0 else 1
+      radius = if (i & 1) is 0 then outer else inner
+      rotation = -Bitmap._PI_OVER_2 + unitRotation * i
+      data.push x + radius * Math.cos(rotation), y + radius * Math.sin(rotation)
+    @drawPath commands, data, clockwise
+
+  drawLine: (points) ->
+    commands = []
+    data = []
+    for point in points
+      commands.push GraphicsPathCommand.LINE_TO
+      data.push point.x, point.y
+    @drawPath commands, data
+
+  drawSpline: (points, interpolation = 50) ->
+    commands = []
+    data = []
+
+    closed = points[0].equals points[points.length - 1]
+    pointsLength = points.length
+    jLen = closed ? pointsLength: pointsLength - 1
+    iLen = interpolation
+    for j in [0...jLen] by 1
+      p0 = points[@_normalizeIndex(j - 1, pointsLength, closed)]
+      p1 = points[@_normalizeIndex(j, pointsLength, closed)]
+      p2 = points[@_normalizeIndex(j + 1, pointsLength, closed)]
+      p3 = points[@_normalizeIndex(j + 2, pointsLength, closed)]
+      if j is jLen - 1
+        iLen = closed ? 1: interpolation + 1
+      for i in [0...iLen] by 1
+        commands.push GraphicsPathCommand.LINE_TO
+        data.push(
+          _interpolateSpline(p0.x, p1.x, p2.x, p3.x, i / interpolation),
+          _interpolateSpline(p0.y, p1.y, p2.y, p3.y, i / interpolation)
+        )
+    commands[0] = GraphicsPathCommand.MOVE_TO
+
+    @drawPath commands, data
+
+  _normalizeIndex: (index, pointsLength, closed) ->
+    unless closed
+      if index < 0 then 0 else if index >= pointsLength then pointsLength - 1 else index
+    else
+      if index < 0 then pointsLength - 1 + index else if index >= pointsLength ? 1 + (index - pointsLength) then index
+
+  _interpolateSpline: (p0, p1, p2, p3, t) ->
+    t2 = t * t
+    t3 = t2 * t
+    0.5 * (-p0 + 3 * p1 - 3 * p2 + p3) * t3 +
+    0.5 * (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2 +
+    0.5 * (-p0 + p2) * t +
+    p1
+
+  _render: ->
+    @_context.fill()
+    @_context.stroke()
+
+
+
+
+
+
+
+
+
+
 window[k] = v for k, v of {
   "sc": {
     "ript": {
@@ -905,6 +1054,7 @@ window[k] = v for k, v of {
       "display": {
         "GraphicsPathCommand": GraphicsPathCommand,
         "JointStyle": JointStyle,
+        "DisplayObject": DisplayObject,
         "CapsStyle": CapsStyle,
         "Bitmap": Bitmap
       },
@@ -912,17 +1062,18 @@ window[k] = v for k, v of {
         "Event": Event,
         "EventEmitter": EventEmitter
       },
-      "geom": {
-        "Rectangle": Rectangle,
-        "Point": Point
-      },
-      "path": path,
       "utils": {
         "NumberUtil": NumberUtil,
-        "ByteArray": ByteArray,
         "Color": Color,
+        "ByteArray": ByteArray,
         "Type": Type
       },
+      "geom": {
+        "Point": Point,
+        "Rectangle": Rectangle,
+        "Matrix": Matrix
+      },
+      "path": path,
       "ui": {
         "Button": Button
       }

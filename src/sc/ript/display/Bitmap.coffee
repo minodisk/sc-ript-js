@@ -1,17 +1,36 @@
 #package sc.ript.display
 
-class Bitmap
+class Bitmap extends DisplayObject
 
   @_PI_2                       : Math.PI * 2
   @_PI_OVER_2                  : Math.PI / 2
   @_ELLIPSE_CUBIC_BEZIER_HANDLE: (Math.SQRT2 - 1) * 4 / 3
 
-  constructor: (width = 320, height = 320) ->
+  constructor: (width = 320, height = 320, color = 0, alpha = 0) ->
+    super()
+
+    if width instanceof Bitmap
+      source = width
+      width = source.width()
+      height = source.height()
+    else
+      switch width.nodeName
+        when 'IMG', 'CANVAS'
+          source = width
+          width = source.width
+          height = source.height
+
     @canvas = document.createElement 'canvas'
     @width width
     @height height
     @_context = @canvas.getContext '2d'
-    @_context.fillStyle = @_context.strokeStyle = 'rgba(0,0,0,0)'
+    @_context.strokeStyle = 'rgba(0,0,0,0)'
+    @beginFill color, alpha
+    @drawRect 0, 0, width, height
+    @endFill()
+
+    if source?
+      @draw source
 
   clone: ->
     bitmap = new Bitmap @width(), @height()
@@ -26,23 +45,29 @@ class Bitmap
     return @canvas.height unless value?
     @canvas.height = value
 
-  clear: ->
-    @canvas.width = @canvas.width
-    @_context.fillStyle = @_context.strokeStyle = 'rgba(0,0,0,0)'
 
-  draw: (image, matrix) ->
-    if matrix?
-      console.log matrix.m11, matrix.m12, matrix.m21, matrix.m22, matrix.tx, matrix.ty
-      @_context.setTransform matrix.m11, matrix.m12, matrix.m21, matrix.m22, matrix.tx, matrix.ty
-    if image instanceof Bitmap
-      image = image.canvas
-    @_context.drawImage image, 0, 0
+  # Binary API
 
   encodeAsPNG: ->
     ByteArray.fromDataURL @canvas.toDataURL 'image/png'
 
   encodeAsJPG: (quality = 0.8) ->
     ByteArray.fromDataURL @canvas.toDataURL 'image/jpeg', quality
+
+
+  # BitmapData API
+
+  clear: ->
+    @canvas.width = @canvas.width
+    @_context.fillStyle = @_context.strokeStyle = 'rgba(0,0,0,0)'
+
+  draw: (image, matrix) ->
+    if image instanceof Bitmap
+      image = image.canvas
+    if matrix?
+      @_context.setTransform matrix.m11, matrix.m12, matrix.m21, matrix.m22, matrix.tx, matrix.ty
+    @_context.drawImage image, 0, 0
+    @_context.setTransform 1, 0, 0, 1, 0, 0
 
 
   # Graphics API
@@ -57,6 +82,10 @@ class Bitmap
   beginFill: (color = 0, alpha = 1) ->
     @_context.fillStyle = Color.toCSSString color, alpha
 
+  endFill: ->
+    @_context.closePath()
+    @_context.fillStyle = 'rgba(0,0,0,0)'
+
   moveTo: (x, y) ->
     @_context.moveTo x, y
 
@@ -64,11 +93,17 @@ class Bitmap
     @_context.lineTo x, y
 
   drawRect: (x, y, width, height) ->
+    @_context.beginPath()
     @_context.rect x, y, width, height
+    @_context.closePath()
+    @_render()
 
   drawCircle: (x, y, radius, clockwise) ->
+    @_context.beginPath()
     @_context.moveTo x + radius, y
     @_context.arc x, y, radius, 0, Bitmap._PI_2, clockwise < 0
+    @_context.closePath()
+    @_render()
 
   drawEllipse: (x, y, width, height, clockwise = 0) ->
     width /= 2
@@ -116,6 +151,7 @@ class Bitmap
       commands.reverse()
       commands.unshift c
 
+    @_context.beginPath()
     i = 0
     for command in commands
       switch command
@@ -127,13 +163,11 @@ class Bitmap
           @_context.quadraticCurveTo data[i++], data[i++], data[i++], data[i++]
         when GraphicsPathCommand.CUBIC_CURVE_TO
           @_context.bezierCurveTo data[i++], data[i++], data[i++], data[i++], data[i++], data[i++]
-
     # Close path when start and end is equal
     if data[0] is data[data.length - 2] and data[1] is data[data.length - 1]
       @_context.closePath()
 
-    @_context.fill()
-    @_context.stroke()
+    @_render()
 
   drawRoundRect: (x, y, width, height, ellipseW, ellipseH = ellipseW, clockwise = 0) ->
     @drawPath [0, 1, 2, 1, 2, 1, 2, 1, 2], [
@@ -172,6 +206,58 @@ class Bitmap
       rotation = -Bitmap._PI_OVER_2 + unitRotation * i
       data.push x + radius * Math.cos(rotation), y + radius * Math.sin(rotation)
     @drawPath commands, data, clockwise
+
+  drawLine: (points) ->
+    commands = []
+    data = []
+    for point in points
+      commands.push GraphicsPathCommand.LINE_TO
+      data.push point.x, point.y
+    @drawPath commands, data
+
+  drawSpline: (points, interpolation = 50) ->
+    commands = []
+    data = []
+
+    closed = points[0].equals points[points.length - 1]
+    pointsLength = points.length
+    jLen = closed ? pointsLength: pointsLength - 1
+    iLen = interpolation
+    for j in [0...jLen] by 1
+      p0 = points[@_normalizeIndex(j - 1, pointsLength, closed)]
+      p1 = points[@_normalizeIndex(j, pointsLength, closed)]
+      p2 = points[@_normalizeIndex(j + 1, pointsLength, closed)]
+      p3 = points[@_normalizeIndex(j + 2, pointsLength, closed)]
+      if j is jLen - 1
+        iLen = closed ? 1: interpolation + 1
+      for i in [0...iLen] by 1
+        commands.push GraphicsPathCommand.LINE_TO
+        data.push(
+          _interpolateSpline(p0.x, p1.x, p2.x, p3.x, i / interpolation),
+          _interpolateSpline(p0.y, p1.y, p2.y, p3.y, i / interpolation)
+        )
+    commands[0] = GraphicsPathCommand.MOVE_TO
+
+    @drawPath commands, data
+
+  _normalizeIndex: (index, pointsLength, closed) ->
+    unless closed
+      if index < 0 then 0 else if index >= pointsLength then pointsLength - 1 else index
+    else
+      if index < 0 then pointsLength - 1 + index else if index >= pointsLength ? 1 + (index - pointsLength) then index
+
+  _interpolateSpline: (p0, p1, p2, p3, t) ->
+    t2 = t * t
+    t3 = t2 * t
+    0.5 * (-p0 + 3 * p1 - 3 * p2 + p3) * t3 +
+    0.5 * (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2 +
+    0.5 * (-p0 + p2) * t +
+    p1
+
+  _render: ->
+    @_context.fill()
+    @_context.stroke()
+
 
 
 

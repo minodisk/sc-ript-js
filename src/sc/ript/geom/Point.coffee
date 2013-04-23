@@ -18,7 +18,9 @@ class Point
     pt0.add pt1.subtract(pt0).multiply(ratio)
 
 
-  constructor: (@x = 0, @y = 0) ->
+  constructor: (x = 0, y = 0) ->
+    @x = +x
+    @y = +y
 
   angle      : (value) ->
     return Math.atan2 @y, @x unless value?
