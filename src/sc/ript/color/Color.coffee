@@ -12,3 +12,7 @@ class Color
     else
       "rgba(#{r},#{g},#{b},#{alpha})"
 
+  @average: (colors...) ->
+    rgbs = do -> new RGB color for color in colors
+    rgb = RGB.average.apply null, rgbs
+    rgb.toHex()

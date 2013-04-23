@@ -2,6 +2,19 @@
 
 class RGB
 
+  @average: (rgbs...) ->
+    r = g = b = 0
+    for rgb in rgbs
+      r += rgb.r
+      g += rgb.g
+      b += rgb.b
+    length = rgbs.length
+    r /= length
+    g /= length
+    b /= length
+    new RGB r, g, b
+
+
   constructor: (@r, @g, @b) ->
     if arguments.length is 1
       hex = r

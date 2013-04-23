@@ -12,6 +12,10 @@ class Color
     else
       "rgba(#{r},#{g},#{b},#{alpha})"
 
+  @average: (colors...) ->
+    rgbs = do -> new RGB color for color in colors
+    rgb = RGB.average.apply null, rgbs
+    rgb.toHex()
 
 
 #package sc.ript.display
@@ -890,6 +894,19 @@ class path
 
 class RGB
 
+  @average: (rgbs...) ->
+    r = g = b = 0
+    for rgb in rgbs
+      r += rgb.r
+      g += rgb.g
+      b += rgb.b
+    length = rgbs.length
+    r /= length
+    g /= length
+    b /= length
+    new RGB r, g, b
+
+
   constructor: (@r, @g, @b) ->
     if arguments.length is 1
       hex = r
@@ -1271,13 +1288,11 @@ class Bitmap extends DisplayObject
     @_context.getImageData rect.x, rect.y, rect.width, rect.height
 
   getPixel32: (x, y) ->
-    imageData = @_context.getImageData x, y, 1, 1
-    [r, g, b, a] = imageData.data
+    {data: [r, g, b, a]} = @_context.getImageData x, y, 1, 1
     a << 24 | r << 16 | g << 8 | b
 
   getPixel: (x, y) ->
-    imageData = @_context.getImageData x, y, 1, 1
-    [r, g, b] = imageData.data
+    {data: [r, g, b]} = @_context.getImageData x, y, 1, 1
     r << 16 | g << 8 | b
 
 

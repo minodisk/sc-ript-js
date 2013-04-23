@@ -90,13 +90,11 @@ class Bitmap extends DisplayObject
     @_context.getImageData rect.x, rect.y, rect.width, rect.height
 
   getPixel32: (x, y) ->
-    imageData = @_context.getImageData x, y, 1, 1
-    [r, g, b, a] = imageData.data
+    {data: [r, g, b, a]} = @_context.getImageData x, y, 1, 1
     a << 24 | r << 16 | g << 8 | b
 
   getPixel: (x, y) ->
-    imageData = @_context.getImageData x, y, 1, 1
-    [r, g, b] = imageData.data
+    {data: [r, g, b]} = @_context.getImageData x, y, 1, 1
     r << 16 | g << 8 | b
 
 
