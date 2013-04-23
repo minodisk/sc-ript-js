@@ -2,14 +2,13 @@
 
 class KernelFilter extends Filter
 
-  constructor: (radiusX, radiusY, kernel) ->
-    super()
+  constructor: (radiusX, radiusY, kernel, quality) ->
+    super quality
 
     @_radiusX = radiusX
     @_radiusY = radiusY
     @_width = @_radiusX * 2 - 1
     @_height = @_radiusY * 2 - 1
-    console.log kernel.length, @_width * @_height
     if kernel.length isnt @_width * @_height
       throw new TypeError 'kernel length isn\'t match with radius'
 

@@ -20,38 +20,6 @@ class Color
 
 #package sc.ript.display
 
-class BlendMode
-
-  @NORMAL: 'normal'
-  @BLEND: 'blend'
-  @ADD: 'add'
-  @SUBTRACT: 'subtract'
-  @DARKEST: 'darkest'
-  @LIGHTEST: 'lightest'
-  @DIFFERENCE: 'difference'
-  @EXCLUSION: 'exclusion'
-  @MULTIPLY: 'multiply'
-  @SCREEN: 'screen'
-
-  @OVERLAY: 'overlay'
-  @SOFT_LIGHT: 'softLight'
-  @HARD_LIGHT: 'hardLight'
-  @VIVID_LIGHT: 'vividLight'
-  @LINEAR_LIGHT: 'linearLight'
-  @PIN_LIGHT: 'pinLight'
-  @HARD_MIX: 'hardMix'
-
-  @DODGE: 'dodge'
-  @BURN: 'burn'
-  @LINEAR_DODGE: 'linearDodge'
-  @LINEAR_BURN: 'linearBurn'
-
-  @PUNCH: 'punch'
-  @MASK: 'mask'
-
-
-#package sc.ript.display
-
 class CapsStyle
 
   @NONE  : 'butt'
@@ -90,6 +58,263 @@ class GraphicsPathCommand
   @WIDE_MOVE_TO  : 4
   @WIDE_LINE_TO  : 5
   @CUBIC_CURVE_TO: 6
+
+
+#package sc.ript.display
+
+class BlendMode
+
+  @NORMAL: 'normal'
+  @BLEND: 'blend'
+  @ADD: 'add'
+  @SUBTRACT: 'subtract'
+  @DARKEST: 'darkest'
+  @LIGHTEST: 'lightest'
+  @DIFFERENCE: 'difference'
+  @EXCLUSION: 'exclusion'
+  @MULTIPLY: 'multiply'
+  @SCREEN: 'screen'
+
+  @OVERLAY: 'overlay'
+  @SOFT_LIGHT: 'softLight'
+  @HARD_LIGHT: 'hardLight'
+  @VIVID_LIGHT: 'vividLight'
+  @LINEAR_LIGHT: 'linearLight'
+  @PIN_LIGHT: 'pinLight'
+  @HARD_MIX: 'hardMix'
+
+  @DODGE: 'dodge'
+  @BURN: 'burn'
+  @LINEAR_DODGE: 'linearDodge'
+  @LINEAR_BURN: 'linearBurn'
+
+  @PUNCH: 'punch'
+  @MASK: 'mask'
+
+
+#package sc.ript.event
+
+
+class Event
+
+  constructor: (@type, @data) ->
+
+
+#package sc.ript.event
+
+
+class EventEmitter
+
+  constructor: ->
+    @_receivers = {}
+
+  on: (type, listener, useCapture = false, priority = 0) ->
+    if typeof listener isnt 'function'
+      throw new TypeError 'listener is\'t Function'
+
+    # typeに対応するレシーバのリストが存在するかをチェック
+    unless @_receivers[type]?
+      @_receivers[type] = []
+
+    receivers = @_receivers[type]
+
+    # リスナが格納済みではないかをチェック
+    i = receivers.length
+    while i--
+      receiver = reveicers[i]
+      if receiver.listener is listener
+        return @
+
+    # リスナを格納し優先度順にソート
+    receivers.push
+      listener  : listener
+      useCapture: useCapture
+      priority  : priority
+    receivers.sort (a, b) ->
+      b.priority - a.priority
+
+    @
+
+  off: (type, listener) ->
+    receivers = @_receivers[type]
+
+    # typeに対応するレシーバが登録されているかをチェック
+    unless receivers
+      return @
+
+    # 格納されていればリストから取り除く
+    i = receivers.length
+    while i--
+      if receivers[i].listener is listener
+        receivers.splice i, 1
+      if receivers.length is 0
+        delete @_receivers[type]
+
+    @
+
+  emit: (event) ->
+    receivers = @_receivers[event.type]
+
+    # typeに対応するレシーバが登録されているかをチェック
+    unless receivers?
+      return @
+
+    event.currentTarget = @
+
+    # 全てのレシーバのリスナをイベントオブジェクトを引数としてコールする
+    # リスナはEventEmitterオブジェクトで束縛される
+    for receiver in receivers
+      do (receiver) =>
+        setTimeout =>
+          if event._isPropagationStoppedImmediately
+            return
+          receiver.listener.call @, event
+        , 0
+
+    @
+
+#package sc.ript.color
+
+class HSV
+
+  constructor: (@h, @s, @v) ->
+    if arguments.length is 1
+      hex = h
+      rgb = new RGB hex
+      r = rgb.r / 255
+      g = rgb.g / 255
+      b = rgb.b / 255
+
+      h = s = v = 0
+      if r >= g then x = r else x = g
+      if b > x then x = b
+      if r <= g then y = r else y = g
+      if b < y then y = b
+      v = x
+      c = x - y
+      if x is 0
+        s = 0
+      else
+        s = c / x
+      if s isnt 0
+        if r is x
+          h = (g - b) / c
+        else
+          if g is x
+            h = 2 + (b - r) / c
+          else
+            if b is x
+              h = 4 + (r - g) / c
+        h = h * 60
+        if h < 0
+          h = h + 360
+      @h = h
+      @s = s
+      @v = v
+    @normalize()
+
+  normalize: ->
+    @s = if @s < 0 then 0 else if @s > 1 then 1 else @s
+    @v = if @v < 0 then 0 else if @v > 1 then 1 else @v
+    @h = @h % 360
+    @h += 360 if @h < 0
+
+  toRGB: ->
+    @normalize()
+    {h, s, v} = @
+    h /= 60
+    i = h >> 0
+    x = v * (1 - s)
+    y = v * (1 - s * (h - 1))
+    z = v * (1 - s * (1 - h + i))
+    x = x * 0xff >> 0
+    y = y * 0xff >> 0
+    z = z * 0xff >> 0
+    v = v * 0xff >> 0
+    switch i
+      when 0 then new RGB v, z, x
+      when 1 then new RGB y, v, x
+      when 2 then new RGB x, v, z
+      when 3 then new RGB x, y, v
+      when 4 then new RGB z, x, v
+      when 5 then new RGB v, x, y
+
+  toHex: ->
+    @toRGB().toHex()
+
+
+
+
+#package sc.ript.utils
+
+class ByteArray
+
+  @BlobBuilder: window.BlobBuilder or window.WebKitBlobBuilder or window.MozBlobBuilder
+
+  @fromDataURL: (dataURL) ->
+    mimeString = dataURL.split(',')[0].split(':')[1].split(';')[0]
+    byteString = atob dataURL.split(',')[1]
+
+    ab = new ArrayBuffer byteString.length
+    ia = new Uint8Array ab
+    for i in [0...byteString.length] by 1
+      ia[i] = byteString.charCodeAt i
+
+    if @BlobBuilder?
+      bb = new ByteArray.BlobBuilder
+      bb.append ab
+      new ByteArray bb.getBlob mimeString
+    else
+      new ByteArray new Blob [ab], type: mimeString
+
+# for Chrome
+#      new ByteArray new Blob [ia], type: mimeString
+
+
+  constructor: (@data) ->
+
+  length: ->
+    @data.size
+
+
+#package sc.ript.filter
+
+class Filter
+
+  constructor: (@quality = 1) ->
+
+  run        : (imageData) ->
+    {width, height, data} = imageData
+    pixels = []
+    i = 0
+    for y in [0...height] by 1
+      pixels[y] = []
+      for x in [0...width] by 1
+        pixels[y][x] = [data[i], data[i + 1], data[i + 2], data[i + 3]]
+        i += 4
+    pixels
+
+    q = @quality
+    while q--
+      i = 0
+      for y in [0...height] by 1
+        for x in [0...width] by 1
+          p = pixels[y][x] = @_evaluatePixel pixels, x, y, width, height
+          data[i] = p[0]
+          data[i + 1] = p[1]
+          data[i + 2] = p[2]
+          data[i + 3] = p[3]
+          i += 4
+
+
+  _evaluatePixel: (pixels, x, y, width, height) ->
+    pixels[y][x]
+
+  _getPixel: (pixels, x, y, width, height) ->
+    x = if x < 0 then 0 else if x > width - 1 then width - 1 else x
+    y = if y < 0 then 0 else if y > height - 1 then height - 1 else y
+    pixels[y][x]
+
 
 
 #package tc.ript.display
@@ -347,156 +572,6 @@ class Blend
       da * sa / 0xff
     ]
 
-
-
-
-#package sc.ript.event
-
-
-class Event
-
-  constructor: (@type, @data) ->
-
-
-#package sc.ript.color
-
-class HSV
-
-  constructor: (@h, @s, @v) ->
-    if arguments.length is 1
-      hex = h
-      rgb = new RGB hex
-      r = rgb.r / 255
-      g = rgb.g / 255
-      b = rgb.b / 255
-
-      h = s = v = 0
-      if r >= g then x = r else x = g
-      if b > x then x = b
-      if r <= g then y = r else y = g
-      if b < y then y = b
-      v = x
-      c = x - y
-      if x is 0
-        s = 0
-      else
-        s = c / x
-      if s isnt 0
-        if r is x
-          h = (g - b) / c
-        else
-          if g is x
-            h = 2 + (b - r) / c
-          else
-            if b is x
-              h = 4 + (r - g) / c
-        h = h * 60
-        if h < 0
-          h = h + 360
-      @h = h
-      @s = s
-      @v = v
-    @normalize()
-
-  normalize: ->
-    @s = if @s < 0 then 0 else if @s > 1 then 1 else @s
-    @v = if @v < 0 then 0 else if @v > 1 then 1 else @v
-    @h = @h % 360
-    @h += 360 if @h < 0
-
-  toRGB: ->
-    @normalize()
-    {h, s, v} = @
-    h /= 60
-    i = h >> 0
-    x = v * (1 - s)
-    y = v * (1 - s * (h - 1))
-    z = v * (1 - s * (1 - h + i))
-    x = x * 0xff >> 0
-    y = y * 0xff >> 0
-    z = z * 0xff >> 0
-    v = v * 0xff >> 0
-    switch i
-      when 0 then new RGB v, z, x
-      when 1 then new RGB y, v, x
-      when 2 then new RGB x, v, z
-      when 3 then new RGB x, y, v
-      when 4 then new RGB z, x, v
-      when 5 then new RGB v, x, y
-
-  toHex: ->
-    @toRGB().toHex()
-
-
-
-
-#package sc.ript.utils
-
-class ByteArray
-
-  @BlobBuilder: window.BlobBuilder or window.WebKitBlobBuilder or window.MozBlobBuilder
-
-  @fromDataURL: (dataURL) ->
-    mimeString = dataURL.split(',')[0].split(':')[1].split(';')[0]
-    byteString = atob dataURL.split(',')[1]
-
-    ab = new ArrayBuffer byteString.length
-    ia = new Uint8Array ab
-    for i in [0...byteString.length] by 1
-      ia[i] = byteString.charCodeAt i
-
-    if @BlobBuilder?
-      bb = new ByteArray.BlobBuilder
-      bb.append ab
-      new ByteArray bb.getBlob mimeString
-    else
-      new ByteArray new Blob [ab], type: mimeString
-
-# for Chrome
-#      new ByteArray new Blob [ia], type: mimeString
-
-
-  constructor: (@data) ->
-
-  length: ->
-    @data.size
-
-
-#package sc.ript.filter
-
-class Filter
-
-  constructor: ->
-
-  run        : (imageData) ->
-    {width, height, data} = imageData
-    pixels = []
-    i = 0
-    for y in [0...height] by 1
-      pixels[y] = []
-      for x in [0...width] by 1
-        pixels[y][x] = [data[i], data[i + 1], data[i + 2], data[i + 3]]
-        i += 4
-    pixels
-
-    i = 0
-    for y in [0...height] by 1
-      for x in [0...width] by 1
-        p = @_evaluatePixel pixels, x, y, width, height
-        data[i] = p[0]
-        data[i + 1] = p[1]
-        data[i + 2] = p[2]
-        data[i + 3] = p[3]
-        i += 4
-
-
-  _evaluatePixel: (pixels, x, y, width, height) ->
-    pixels[y][x]
-
-  _getPixel: (pixels, x, y, width, height) ->
-    x = if x < 0 then 0 else if x > width - 1 then width - 1 else x
-    y = if y < 0 then 0 else if y > height - 1 then height - 1 else y
-    pixels[y][x]
 
 
 
@@ -994,79 +1069,6 @@ class Type
 
 
 
-#package sc.ript.event
-
-
-class EventEmitter
-
-  constructor: ->
-    @_receivers = {}
-
-  on: (type, listener, useCapture = false, priority = 0) ->
-    if typeof listener isnt 'function'
-      throw new TypeError 'listener is\'t Function'
-
-    # typeに対応するレシーバのリストが存在するかをチェック
-    unless @_receivers[type]?
-      @_receivers[type] = []
-
-    receivers = @_receivers[type]
-
-    # リスナが格納済みではないかをチェック
-    i = receivers.length
-    while i--
-      receiver = reveicers[i]
-      if receiver.listener is listener
-        return @
-
-    # リスナを格納し優先度順にソート
-    receivers.push
-      listener  : listener
-      useCapture: useCapture
-      priority  : priority
-    receivers.sort (a, b) ->
-      b.priority - a.priority
-
-    @
-
-  off: (type, listener) ->
-    receivers = @_receivers[type]
-
-    # typeに対応するレシーバが登録されているかをチェック
-    unless receivers
-      return @
-
-    # 格納されていればリストから取り除く
-    i = receivers.length
-    while i--
-      if receivers[i].listener is listener
-        receivers.splice i, 1
-      if receivers.length is 0
-        delete @_receivers[type]
-
-    @
-
-  emit: (event) ->
-    receivers = @_receivers[event.type]
-
-    # typeに対応するレシーバが登録されているかをチェック
-    unless receivers?
-      return @
-
-    event.currentTarget = @
-
-    # 全てのレシーバのリスナをイベントオブジェクトを引数としてコールする
-    # リスナはEventEmitterオブジェクトで束縛される
-    for receiver in receivers
-      do (receiver) =>
-        setTimeout =>
-          if event._isPropagationStoppedImmediately
-            return
-          receiver.listener.call @, event
-        , 0
-
-    @
-
 #package sc.ript.filter
 
 class ThresholdFilter extends Filter
@@ -1101,14 +1103,13 @@ class ThresholdFilter extends Filter
 
 class KernelFilter extends Filter
 
-  constructor: (radiusX, radiusY, kernel) ->
-    super()
+  constructor: (radiusX, radiusY, kernel, quality) ->
+    super quality
 
     @_radiusX = radiusX
     @_radiusY = radiusY
     @_width = @_radiusX * 2 - 1
     @_height = @_radiusY * 2 - 1
-    console.log kernel.length, @_width * @_height
     if kernel.length isnt @_width * @_height
       throw new TypeError 'kernel length isn\'t match with radius'
 
@@ -1293,47 +1294,15 @@ class Button extends EventEmitter
 
 #package sc.ript.filter
 
-class BirateralFilter extends KernelFilter
+class BlurFilter extends KernelFilter
 
-  @_SIGMA_8BIT: 2.04045
-
-  constructor: (radiusX = 2, radiusY = 2, threshold = 0x20) ->
-    # generate kernel
+  constructor: (radiusX, radiusY, quality) ->
+    side = radiusX * 2 - 1
+    length = side * side
+    invert = 1 / length
     kernel = []
-    gaussSpaceCoeff = -0.5 / ((radiusX / BirateralFilter._SIGMA_8BIT) * (radiusY / BirateralFilter._SIGMA_8BIT))
-    for relY in [1 - radiusY...radiusY] by 1
-      for relX in [1 - radiusX...radiusX] by 1
-        kernel.push Math.exp((relX * relX + relY * relY) * gaussSpaceCoeff)
-
-    # call super constructor
-    super radiusX, radiusY, kernel
-
-    sigmaColor = threshold / 0xff * Math.sqrt(0xff * 0xff * 3) / BirateralFilter._SIGMA_8BIT
-    @_gaussColorCoeff = -0.5 / (sigmaColor * sigmaColor)
-
-  _runKernel: (pixel, pixels, x, y, width, height) ->
-    center = @_getPixel pixels, x, y, width, height
-    totalWeight = 0
-
-    i = 0
-    for relY in [1 - @_radiusY...@_radiusY] by 1
-      absY = y + relY
-      for relX in [1 - @_radiusX...@_radiusX] by 1
-        absX = x + relX
-        p = @_getPixel pixels, absX, absY, width, height
-        dr = p[0] - center[0]
-        dg = p[1] - center[1]
-        db = p[2] - center[2]
-        weight = @_kernel[i] * Math.exp((dr * dr + dg * dg + db * db) * @_gaussColorCoeff)
-        totalWeight += weight
-        pixel[0] += p[0] * weight
-        pixel[1] += p[1] * weight
-        pixel[2] += p[2] * weight
-        i++
-
-    pixel[0] /= totalWeight
-    pixel[1] /= totalWeight
-    pixel[2] /= totalWeight
+    kernel.push invert while length--
+    super radiusX, radiusY, kernel, quality
 
 
 
@@ -1666,6 +1635,52 @@ class Bitmap extends DisplayObject
 
 
 
+#package sc.ript.filter
+
+class BirateralFilter extends KernelFilter
+
+  @_SIGMA_8BIT: 2.04045
+
+  constructor: (radiusX = 2, radiusY = 2, threshold = 0x20) ->
+    # generate kernel
+    kernel = []
+    gaussSpaceCoeff = -0.5 / ((radiusX / BirateralFilter._SIGMA_8BIT) * (radiusY / BirateralFilter._SIGMA_8BIT))
+    for relY in [1 - radiusY...radiusY] by 1
+      for relX in [1 - radiusX...radiusX] by 1
+        kernel.push Math.exp((relX * relX + relY * relY) * gaussSpaceCoeff)
+
+    # call super constructor
+    super radiusX, radiusY, kernel
+
+    sigmaColor = threshold / 0xff * Math.sqrt(0xff * 0xff * 3) / BirateralFilter._SIGMA_8BIT
+    @_gaussColorCoeff = -0.5 / (sigmaColor * sigmaColor)
+
+  _runKernel: (pixel, pixels, x, y, width, height) ->
+    center = @_getPixel pixels, x, y, width, height
+    totalWeight = 0
+
+    i = 0
+    for relY in [1 - @_radiusY...@_radiusY] by 1
+      absY = y + relY
+      for relX in [1 - @_radiusX...@_radiusX] by 1
+        absX = x + relX
+        p = @_getPixel pixels, absX, absY, width, height
+        dr = p[0] - center[0]
+        dg = p[1] - center[1]
+        db = p[2] - center[2]
+        weight = @_kernel[i] * Math.exp((dr * dr + dg * dg + db * db) * @_gaussColorCoeff)
+        totalWeight += weight
+        pixel[0] += p[0] * weight
+        pixel[1] += p[1] * weight
+        pixel[2] += p[2] * weight
+        i++
+
+    pixel[0] /= totalWeight
+    pixel[1] /= totalWeight
+    pixel[2] /= totalWeight
+
+
+
 window[k] = v for k, v of {
   "sc": {
     "ript": {
@@ -1675,10 +1690,10 @@ window[k] = v for k, v of {
         "RGB": RGB
       },
       "display": {
-        "BlendMode": BlendMode,
         "CapsStyle": CapsStyle,
         "DisplayObject": DisplayObject,
         "GraphicsPathCommand": GraphicsPathCommand,
+        "BlendMode": BlendMode,
         "JointStyle": JointStyle,
         "Bitmap": Bitmap
       },
@@ -1695,6 +1710,7 @@ window[k] = v for k, v of {
         "Filter": Filter,
         "ThresholdFilter": ThresholdFilter,
         "KernelFilter": KernelFilter,
+        "BlurFilter": BlurFilter,
         "BirateralFilter": BirateralFilter
       },
       "path": path,
