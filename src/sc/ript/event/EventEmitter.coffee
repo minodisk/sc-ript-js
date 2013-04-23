@@ -1,4 +1,4 @@
-#package sc.ript.events
+#package sc.ript.event
 
 
 class EventEmitter

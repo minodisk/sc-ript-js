@@ -20,6 +20,56 @@ class Color
 
 #package sc.ript.display
 
+class CapsStyle
+
+  @NONE  : 'butt'
+  @BUTT  : 'butt'
+  @ROUND : 'round'
+  @SQUARE: 'square'
+
+#package sc.ript.display
+
+class DisplayObject
+
+  @_RADIAN_PER_DEGREE: Math.PI / 180
+
+  constructor: ->
+    @x = @y = @rotation = 0
+    @scaleX = @scaleY = 1
+    @blendMode = BlendMode.NORMAL
+
+  matrix: ->
+    new Matrix()
+      .scale(@scaleX, @scaleY)
+      .rotate(@rotation * DisplayObject._RADIAN_PER_DEGREE)
+      .translate(@x, @y)
+
+
+
+
+#package sc.ript.display
+
+class GraphicsPathCommand
+
+  @NO_OP         : 0
+  @MOVE_TO       : 1
+  @LINE_TO       : 2
+  @CURVE_TO      : 3
+  @WIDE_MOVE_TO  : 4
+  @WIDE_LINE_TO  : 5
+  @CUBIC_CURVE_TO: 6
+
+
+#package sc.ript.display
+
+class JointStyle
+
+  @BEVEL: 'bevel'
+  @MITER: 'miter'
+  @ROUND: 'round'
+
+#package sc.ript.display
+
 class BlendMode
 
   @NORMAL: 'normal'
@@ -50,36 +100,81 @@ class BlendMode
   @MASK: 'mask'
 
 
-#package sc.ript.display
+#package sc.ript.color
 
-class CapsStyle
+class HSV
 
-  @NONE  : 'butt'
-  @BUTT  : 'butt'
-  @ROUND : 'round'
-  @SQUARE: 'square'
+  constructor: (@h, @s, @v) ->
+    if arguments.length is 1
+      hex = h
+      rgb = new RGB hex
+      r = rgb.r / 255
+      g = rgb.g / 255
+      b = rgb.b / 255
 
-#package sc.ript.display
+      h = s = v = 0
+      if r >= g then x = r else x = g
+      if b > x then x = b
+      if r <= g then y = r else y = g
+      if b < y then y = b
+      v = x
+      c = x - y
+      if x is 0
+        s = 0
+      else
+        s = c / x
+      if s isnt 0
+        if r is x
+          h = (g - b) / c
+        else
+          if g is x
+            h = 2 + (b - r) / c
+          else
+            if b is x
+              h = 4 + (r - g) / c
+        h = h * 60
+        if h < 0
+          h = h + 360
+      @h = h
+      @s = s
+      @v = v
+    @normalize()
 
-class DisplayObject
+  normalize: ->
+    @s = if @s < 0 then 0 else if @s > 1 then 1 else @s
+    @v = if @v < 0 then 0 else if @v > 1 then 1 else @v
+    @h = @h % 360
+    @h += 360 if @h < 0
 
-  @_RADIAN_PER_DEGREE: Math.PI / 180
+  toRGB: ->
+    @normalize()
+    {h, s, v} = @
+    h /= 60
+    i = h >> 0
+    x = v * (1 - s)
+    y = v * (1 - s * (h - 1))
+    z = v * (1 - s * (1 - h + i))
+    x = x * 0xff >> 0
+    y = y * 0xff >> 0
+    z = z * 0xff >> 0
+    v = v * 0xff >> 0
+    switch i
+      when 0 then new RGB v, z, x
+      when 1 then new RGB y, v, x
+      when 2 then new RGB x, v, z
+      when 3 then new RGB x, y, v
+      when 4 then new RGB z, x, v
+      when 5 then new RGB v, x, y
 
-  constructor: ->
-    @x = @y = @rotation = 0
-    @scaleX = @scaleY = 1
-    @blendMode = BlendMode.NORMAL
-
-  matrix: ->
-    new Matrix()
-      .scale(@scaleX, @scaleY)
-      .rotate(@rotation * DisplayObject._RADIAN_PER_DEGREE)
-      .translate(@x, @y)
+  toHex: ->
+    @toRGB().toHex()
 
 
 
 
-#package sc.ript.display
+
+
+#package sc.ript.filter
 
 class Filter
 
@@ -87,6 +182,52 @@ class Filter
 
   scan: (source, rect) ->
 
+
+
+class KernelFilter
+
+
+
+#package sc.ript.geom
+
+class Matrix
+
+  constructor: (@m11 = 1, @m12 = 0, @m21 = 0, @m22 = 1, @tx = 0, @ty = 0) ->
+
+  translate  : (x = 0, y = 0) ->
+    @concat new Matrix 1, 0, 0, 1, x, y
+    @
+
+  scale: (x = 1, y = 1) ->
+    @concat new Matrix x, 0, 0, y, 0, 0
+    @
+
+  rotate: (theta) ->
+    s = Math.sin theta
+    c = Math.cos theta
+    @concat new Matrix c, s, -s, c, 0, 0
+    @
+
+  concat: (matrix) ->
+    { m11, m12, m21, m22, tx, ty } = @
+    @m11 = m11 * matrix.m11 + m12 * matrix.m21
+    @m12 = m11 * matrix.m12 + m12 * matrix.m22
+    @m21 = m21 * matrix.m11 + m22 * matrix.m21
+    @m22 = m21 * matrix.m12 + m22 * matrix.m22
+    @tx = tx * matrix.m11 + ty * matrix.m21 + matrix.tx
+    @ty = tx * matrix.m12 + ty * matrix.m22 + matrix.ty
+    @
+
+  invert: ->
+    { m11, m12, m21, m22, tx, ty } = @
+    d = m11 * m22 - m12 * m21
+    @m11 = m22 / d
+    @m12 = -m12 / d
+    @m21 = -m21 / d
+    @m22 = m11 / d
+    @m41 = (m21 * ty - m22 * tx) / d
+    @m42 = (m12 * tx - m11 * ty) / d
+    @
 
 
 #package tc.ript.display
@@ -346,201 +487,6 @@ class Blend
     ]
 
 
-
-
-#package sc.ript.color
-
-class HSV
-
-  constructor: (@h, @s, @v) ->
-    if arguments.length is 1
-      hex = h
-      rgb = new RGB hex
-      r = rgb.r / 255
-      g = rgb.g / 255
-      b = rgb.b / 255
-
-      h = s = v = 0
-      if r >= g then x = r else x = g
-      if b > x then x = b
-      if r <= g then y = r else y = g
-      if b < y then y = b
-      v = x
-      c = x - y
-      if x is 0
-        s = 0
-      else
-        s = c / x
-      if s isnt 0
-        if r is x
-          h = (g - b) / c
-        else
-          if g is x
-            h = 2 + (b - r) / c
-          else
-            if b is x
-              h = 4 + (r - g) / c
-        h = h * 60
-        if h < 0
-          h = h + 360
-      @h = h
-      @s = s
-      @v = v
-    @normalize()
-
-  normalize: ->
-    @s = if @s < 0 then 0 else if @s > 1 then 1 else @s
-    @v = if @v < 0 then 0 else if @v > 1 then 1 else @v
-    @h = @h % 360
-    @h += 360 if @h < 0
-
-  toRGB: ->
-    @normalize()
-    {h, s, v} = @
-    h /= 60
-    i = h >> 0
-    x = v * (1 - s)
-    y = v * (1 - s * (h - 1))
-    z = v * (1 - s * (1 - h + i))
-    x = x * 0xff >> 0
-    y = y * 0xff >> 0
-    z = z * 0xff >> 0
-    v = v * 0xff >> 0
-    switch i
-      when 0 then new RGB v, z, x
-      when 1 then new RGB y, v, x
-      when 2 then new RGB x, v, z
-      when 3 then new RGB x, y, v
-      when 4 then new RGB z, x, v
-      when 5 then new RGB v, x, y
-
-  toHex: ->
-    @toRGB().toHex()
-
-
-
-
-#package sc.ript.events
-
-
-class Event
-
-  constructor: (@type, @data) ->
-
-
-#package sc.ript.events
-
-
-class EventEmitter
-
-  constructor: ->
-    @_receivers = {}
-
-  on: (type, listener, useCapture = false, priority = 0) ->
-    if typeof listener isnt 'function'
-      throw new TypeError 'listener is\'t Function'
-
-    # typeに対応するレシーバのリストが存在するかをチェック
-    unless @_receivers[type]?
-      @_receivers[type] = []
-
-    receivers = @_receivers[type]
-
-    # リスナが格納済みではないかをチェック
-    i = receivers.length
-    while i--
-      receiver = reveicers[i]
-      if receiver.listener is listener
-        return @
-
-    # リスナを格納し優先度順にソート
-    receivers.push
-      listener  : listener
-      useCapture: useCapture
-      priority  : priority
-    receivers.sort (a, b) ->
-      b.priority - a.priority
-
-    @
-
-  off: (type, listener) ->
-    receivers = @_receivers[type]
-
-    # typeに対応するレシーバが登録されているかをチェック
-    unless receivers
-      return @
-
-    # 格納されていればリストから取り除く
-    i = receivers.length
-    while i--
-      if receivers[i].listener is listener
-        receivers.splice i, 1
-      if receivers.length is 0
-        delete @_receivers[type]
-
-    @
-
-  emit: (event) ->
-    receivers = @_receivers[event.type]
-
-    # typeに対応するレシーバが登録されているかをチェック
-    unless receivers?
-      return @
-
-    event.currentTarget = @
-
-    # 全てのレシーバのリスナをイベントオブジェクトを引数としてコールする
-    # リスナはEventEmitterオブジェクトで束縛される
-    for receiver in receivers
-      do (receiver) =>
-        setTimeout =>
-          if event._isPropagationStoppedImmediately
-            return
-          receiver.listener.call @, event
-        , 0
-
-    @
-
-#package sc.ript.geom
-
-class Matrix
-
-  constructor: (@m11 = 1, @m12 = 0, @m21 = 0, @m22 = 1, @tx = 0, @ty = 0) ->
-
-  translate  : (x = 0, y = 0) ->
-    @concat new Matrix 1, 0, 0, 1, x, y
-    @
-
-  scale: (x = 1, y = 1) ->
-    @concat new Matrix x, 0, 0, y, 0, 0
-    @
-
-  rotate: (theta) ->
-    s = Math.sin theta
-    c = Math.cos theta
-    @concat new Matrix c, s, -s, c, 0, 0
-    @
-
-  concat: (matrix) ->
-    { m11, m12, m21, m22, tx, ty } = @
-    @m11 = m11 * matrix.m11 + m12 * matrix.m21
-    @m12 = m11 * matrix.m12 + m12 * matrix.m22
-    @m21 = m21 * matrix.m11 + m22 * matrix.m21
-    @m22 = m21 * matrix.m12 + m22 * matrix.m22
-    @tx = tx * matrix.m11 + ty * matrix.m21 + matrix.tx
-    @ty = tx * matrix.m12 + ty * matrix.m22 + matrix.ty
-    @
-
-  invert: ->
-    { m11, m12, m21, m22, tx, ty } = @
-    d = m11 * m22 - m12 * m21
-    @m11 = m22 / d
-    @m12 = -m12 / d
-    @m21 = -m21 / d
-    @m22 = m11 / d
-    @m41 = (m21 * ty - m22 * tx) / d
-    @m42 = (m12 * tx - m11 * ty) / d
-    @
 
 
 #package sc.ript.geom
@@ -957,17 +903,12 @@ class ByteArray
     @data.size
 
 
-#package sc.ript.display
+#package sc.ript.events
 
-class GraphicsPathCommand
 
-  @NO_OP         : 0
-  @MOVE_TO       : 1
-  @LINE_TO       : 2
-  @CURVE_TO      : 3
-  @WIDE_MOVE_TO  : 4
-  @WIDE_LINE_TO  : 5
-  @CUBIC_CURVE_TO: 6
+class Event
+
+  constructor: (@type, @data) ->
 
 
 class Type
@@ -1032,13 +973,78 @@ class Type
 
 
 
-#package sc.ript.display
+#package sc.ript.events
 
-class JointStyle
 
-  @BEVEL: 'bevel'
-  @MITER: 'miter'
-  @ROUND: 'round'
+class EventEmitter
+
+  constructor: ->
+    @_receivers = {}
+
+  on: (type, listener, useCapture = false, priority = 0) ->
+    if typeof listener isnt 'function'
+      throw new TypeError 'listener is\'t Function'
+
+    # typeに対応するレシーバのリストが存在するかをチェック
+    unless @_receivers[type]?
+      @_receivers[type] = []
+
+    receivers = @_receivers[type]
+
+    # リスナが格納済みではないかをチェック
+    i = receivers.length
+    while i--
+      receiver = reveicers[i]
+      if receiver.listener is listener
+        return @
+
+    # リスナを格納し優先度順にソート
+    receivers.push
+      listener  : listener
+      useCapture: useCapture
+      priority  : priority
+    receivers.sort (a, b) ->
+      b.priority - a.priority
+
+    @
+
+  off: (type, listener) ->
+    receivers = @_receivers[type]
+
+    # typeに対応するレシーバが登録されているかをチェック
+    unless receivers
+      return @
+
+    # 格納されていればリストから取り除く
+    i = receivers.length
+    while i--
+      if receivers[i].listener is listener
+        receivers.splice i, 1
+      if receivers.length is 0
+        delete @_receivers[type]
+
+    @
+
+  emit: (event) ->
+    receivers = @_receivers[event.type]
+
+    # typeに対応するレシーバが登録されているかをチェック
+    unless receivers?
+      return @
+
+    event.currentTarget = @
+
+    # 全てのレシーバのリスナをイベントオブジェクトを引数としてコールする
+    # リスナはEventEmitterオブジェクトで束縛される
+    for receiver in receivers
+      do (receiver) =>
+        setTimeout =>
+          if event._isPropagationStoppedImmediately
+            return
+          receiver.listener.call @, event
+        , 0
+
+    @
 
 #package sc.ript.ui
 
@@ -1525,17 +1531,20 @@ window[k] = v for k, v of {
         "RGB": RGB
       },
       "display": {
-        "BlendMode": BlendMode,
         "CapsStyle": CapsStyle,
         "DisplayObject": DisplayObject,
-        "Filter": Filter,
         "GraphicsPathCommand": GraphicsPathCommand,
         "JointStyle": JointStyle,
+        "BlendMode": BlendMode,
         "Bitmap": Bitmap
       },
       "events": {
-        "Event": Event,
-        "EventEmitter": EventEmitter
+        "EventEmitter": EventEmitter,
+        "Event": Event
+      },
+      "filter": {
+        "Filter": Filter,
+        "KernelFilter": KernelFilter
       },
       "geom": {
         "Matrix": Matrix,
