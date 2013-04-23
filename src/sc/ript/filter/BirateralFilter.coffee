@@ -1,7 +1,7 @@
 #package sc.ript.filter
 
-class BirateralFilter extends Filter
+class BirateralFilter extends KernelFilter
 
-  constructor: ->
-    super()
+  constructor: (radiusX, radiusY, kernel) ->
+    super radiusX, radiusY, kernel
 
