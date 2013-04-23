@@ -450,12 +450,17 @@ class Bitmap
   @_PI_OVER_2                  : Math.PI / 2
   @_ELLIPSE_CUBIC_BEZIER_HANDLE: (Math.SQRT2 - 1) * 4 / 3
 
-  constructor: (canvas) ->
-    unless canvas?
-      canvas = document.createElement 'canvas'
-    @canvas = canvas
+  constructor: (width = 320, height = 320) ->
+    @canvas = document.createElement 'canvas'
+    @width width
+    @height height
     @_context = @canvas.getContext '2d'
     @_context.fillStyle = @_context.strokeStyle = 'rgba(0,0,0,0)'
+
+  clone: ->
+    bitmap = new Bitmap @width(), @height()
+    bitmap.draw @
+    bitmap
 
   width: (value) ->
     return @canvas.width unless value?
@@ -471,7 +476,10 @@ class Bitmap
 
   draw: (image, matrix) ->
     if matrix?
+      console.log matrix.m11, matrix.m12, matrix.m21, matrix.m22, matrix.tx, matrix.ty
       @_context.setTransform matrix.m11, matrix.m12, matrix.m21, matrix.m22, matrix.tx, matrix.ty
+    if image instanceof Bitmap
+      image = image.canvas
     @_context.drawImage image, 0, 0
 
   encodeAsPNG: ->
@@ -490,12 +498,8 @@ class Bitmap
     @_context.lineJoin = jointStyle
     @_context.miterLimit = miterLimit
 
-    console.log 'lineStyle:', @_context.strokeStyle
-
   beginFill: (color = 0, alpha = 1) ->
     @_context.fillStyle = Color.toCSSString color, alpha
-
-    console.log 'fillStyle:', @_context.fillStyle
 
   moveTo: (x, y) ->
     @_context.moveTo x, y
@@ -561,10 +565,8 @@ class Bitmap
       switch command
         when GraphicsPathCommand.MOVE_TO
           @_context.moveTo data[i++], data[i++]
-          console.log 'moveTo:', data[i-2],data[i-1]
         when GraphicsPathCommand.LINE_TO
           @_context.lineTo data[i++], data[i++]
-          console.log 'lineTo:', data[i-2],data[i-1]
         when GraphicsPathCommand.CURVE_TO
           @_context.quadraticCurveTo data[i++], data[i++], data[i++], data[i++]
         when GraphicsPathCommand.CUBIC_CURVE_TO
