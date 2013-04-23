@@ -15,7 +15,11 @@ class Bitmap extends DisplayObject
       height = source.height()
     else
       switch width.nodeName
-        when 'IMG', 'CANVAS'
+        when 'CANVAS'
+          canvas = width
+          width = canvas.width
+          height = canvas.height
+        when 'IMG'
           source = width
           width = source.width
           height = source.height
@@ -25,14 +29,18 @@ class Bitmap extends DisplayObject
     if width is 0 or height is 0
       throw new TypeError 'Can\'t construct with 0 size'
 
-    @canvas = document.createElement 'canvas'
-    @width width
-    @height height
+    if canvas?
+      @canvas = canvas
+    else
+      @canvas = document.createElement 'canvas'
+      @width width
+      @height height
     @_context = @canvas.getContext '2d'
     @_context.strokeStyle = 'rgba(0,0,0,0)'
-    @beginFill color, alpha
-    @drawRect 0, 0, width, height
-    @endFill()
+    if alpha isnt 0
+      @beginFill color, alpha
+      @drawRect 0, 0, width, height
+      @endFill()
 
     if source?
       @draw source
