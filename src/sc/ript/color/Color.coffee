@@ -1,3 +1,5 @@
+#package sc.ript.color
+
 class Color
 
   @toCSSString: (color, alpha = 1) ->
@@ -9,3 +11,4 @@ class Color
       "rgb(#{r},#{g},#{b})"
     else
       "rgba(#{r},#{g},#{b},#{alpha})"
+
