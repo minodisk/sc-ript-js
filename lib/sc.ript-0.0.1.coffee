@@ -82,6 +82,79 @@ class Event
   constructor: (@type, @data) ->
 
 
+#package sc.ript.events
+
+
+class EventEmitter
+
+  constructor: ->
+    @_receivers = {}
+
+  on: (type, listener, useCapture = false, priority = 0) ->
+    if typeof listener isnt 'function'
+      throw new TypeError 'listener is\'t Function'
+
+    # typeに対応するレシーバのリストが存在するかをチェック
+    unless @_receivers[type]?
+      @_receivers[type] = []
+
+    receivers = @_receivers[type]
+
+    # リスナが格納済みではないかをチェック
+    i = receivers.length
+    while i--
+      receiver = reveicers[i]
+      if receiver.listener is listener
+        return @
+
+    # リスナを格納し優先度順にソート
+    receivers.push
+      listener  : listener
+      useCapture: useCapture
+      priority  : priority
+    receivers.sort (a, b) ->
+      b.priority - a.priority
+
+    @
+
+  off: (type, listener) ->
+    receivers = @_receivers[type]
+
+    # typeに対応するレシーバが登録されているかをチェック
+    unless receivers
+      return @
+
+    # 格納されていればリストから取り除く
+    i = receivers.length
+    while i--
+      if receivers[i].listener is listener
+        receivers.splice i, 1
+      if receivers.length is 0
+        delete @_receivers[type]
+
+    @
+
+  emit: (event) ->
+    receivers = @_receivers[event.type]
+
+    # typeに対応するレシーバが登録されているかをチェック
+    unless receivers?
+      return @
+
+    event.currentTarget = @
+
+    # 全てのレシーバのリスナをイベントオブジェクトを引数としてコールする
+    # リスナはEventEmitterオブジェクトで束縛される
+    for receiver in receivers
+      do (receiver) =>
+        setTimeout =>
+          if event._isPropagationStoppedImmediately
+            return
+          receiver.listener.call @, event
+        , 0
+
+    @
+
 #package sc.ript.display
 
 class CapsStyle
@@ -90,187 +163,6 @@ class CapsStyle
   @BUTT  : 'butt'
   @ROUND : 'round'
   @SQUARE: 'square'
-
-#package sc.ript.display
-
-class Bitmap
-
-  @_PI_2                       : Math.PI * 2
-  @_PI_OVER_2                  : Math.PI / 2
-  @_ELLIPSE_CUBIC_BEZIER_HANDLE: (Math.SQRT2 - 1) * 4 / 3
-
-  constructor: (canvas) ->
-    @_canvas = canvas
-    @_context = @_canvas.getContext '2d'
-    @_context.fillStyle = @_context.strokeStyle = 'rgba(0,0,0,0)'
-    console.log 'lineStyle:', @_context.strokeStyle
-    console.log 'fillStyle:', @_context.fillStyle
-
-  width: (value) ->
-    return @_canvas.width unless value?
-    @_canvas.width = value
-
-  height: (value) ->
-    return @_canvas.height unless value?
-    @_canvas.height = value
-
-  clear: ->
-    @_canvas.width = @_canvas.width
-    @_context.fillStyle = @_context.strokeStyle = 'rgba(0,0,0,0)'
-
-  draw: (image, matrix) ->
-    if matrix?
-      @_context.setTransform matrix.m11, matrix.m12, matrix.m21, matrix.m22, matrix.tx, matrix.ty
-    @_context.drawImage image, 0, 0
-
-  encodeAsPNG: ->
-    ByteArray.fromDataURL @_canvas.toDataURL 'image/png'
-
-  encodeAsJPG: (quality = 0.8) ->
-    ByteArray.fromDataURL @_canvas.toDataURL 'image/jpeg', quality
-
-
-  # Graphics API
-
-  lineStyle: (thickness = 1, color = 0, alpha = 1, capsStyle = CapsStyle.NONE, jointStyle = JointStyle.BEVEL, miterLimit = 10) ->
-    @_context.lineWidth = thickness
-    @_context.strokeStyle = ColorUtil.toCSSString color, alpha
-    @_context.lineCaps = capsStyle
-    @_context.lineJoin = jointStyle
-    @_context.miterLimit = miterLimit
-
-    console.log 'lineStyle:', @_context.strokeStyle
-
-  beginFill: (color = 0, alpha = 1) ->
-    @_context.fillStyle = ColorUtil.toCSSString color, alpha
-
-    console.log 'fillStyle:', @_context.fillStyle
-
-  moveTo: (x, y) ->
-    @_context.moveTo x, y
-
-  lineTo: (x, y) ->
-    @_context.lineTo x, y
-
-  drawRect: (x, y, width, height) ->
-    @_context.rect x, y, width, height
-
-  drawCircle: (x, y, radius, clockwise) ->
-    @_context.moveTo x + radius, y
-    @_context.arc x, y, radius, 0, Bitmap._PI_2, clockwise < 0
-
-  drawEllipse: (x, y, width, height, clockwise = 0) ->
-    width /= 2
-    height /= 2
-    x += width
-    y += height
-    handleWidth = width * Bitmap._ELLIPSE_CUBIC_BEZIER_HANDLE
-    handleHeight = height * Bitmap._ELLIPSE_CUBIC_BEZIER_HANDLE
-    @drawPath [0, 3, 3, 3, 3], [
-      x + width, y
-      x + width, y + handleHeight, x + handleWidth, y + height, x, y + height
-      x - handleWidth, y + height, x - width, y + handleHeight, x - width, y
-      x - width, y - handleHeight, x - handleWidth, y - height, x, y - height
-      x + handleWidth, y - height, x + width, y - handleHeight, x + width, y
-    ], clockwise
-
-  curveTo: (x1, y1, x2, y2) ->
-    @_context.quadraticCurveTo x1, y1, x2, y2
-
-  cubicCurveTo: (x1, y1, x2, y2, x3, y3) ->
-    @_context.bezierCurveTo x1, y1, x2, y2, x3, y3
-
-  drawPath: (commands, data, clockwise = 0) ->
-    rect = new Rectangle data[0], data[1], 0, 0
-    for i in [1...data.length / 2] by 1
-      j = i * 2
-      rect.contain data[j], data[j + 1]
-
-    if clockwise < 0
-      d = []
-      i = 0
-      for command in commands
-        switch command
-          when 0, 1 then d.unshift data[i++], data[i++]
-          when 2
-            i += 4
-            d.unshift data[i - 2], data[i - 1], data[i - 4], data[i - 3]
-          when 3
-            i += 6
-            d.unshift data[i - 2], data[i - 1], data[i - 4], data[i - 3], data[i - 6], data[i - 5]
-      data = d
-
-      commands = commands.slice()
-      c = commands.shift()
-      commands.reverse()
-      commands.unshift c
-
-    i = 0
-    for command in commands
-      switch command
-        when GraphicsPathCommand.MOVE_TO
-          @_context.moveTo data[i++], data[i++]
-          console.log 'moveTo:', data[i-2],data[i-1]
-        when GraphicsPathCommand.LINE_TO
-          @_context.lineTo data[i++], data[i++]
-          console.log 'lineTo:', data[i-2],data[i-1]
-        when GraphicsPathCommand.CURVE_TO
-          @_context.quadraticCurveTo data[i++], data[i++], data[i++], data[i++]
-        when GraphicsPathCommand.CUBIC_CURVE_TO
-          @_context.bezierCurveTo data[i++], data[i++], data[i++], data[i++], data[i++], data[i++]
-
-    # Close path when start and end is equal
-    if data[0] is data[data.length - 2] and data[1] is data[data.length - 1]
-      @_context.closePath()
-
-    @_context.fill()
-    @_context.stroke()
-
-  drawRoundRect: (x, y, width, height, ellipseW, ellipseH = ellipseW, clockwise = 0) ->
-    @drawPath [0, 1, 2, 1, 2, 1, 2, 1, 2], [
-      x + ellipseW, y
-      x + width - ellipseW, y
-      x + width, y, x + width, y + ellipseH
-      x + width, y + height - ellipseH
-      x + width, y + height, x + width - ellipseW, y + height
-      x + ellipseW, y + height
-      x, y + height, x, y + height - ellipseH
-      x, y + ellipseH
-      x, y, x + ellipseW, y
-    ], clockwise
-
-  drawRegularPolygon: (x, y, radius, length = 3, clockwise = 0) ->
-    commands = []
-    data = []
-    unitRotation = Bitmap._PI_2 / length
-    for i in [0..length]
-      commands.push if i is 0 then 0 else 1
-      rotation = -Bitmap._PI_OVER_2 + unitRotation * i
-      data.push x + radius * Math.cos(rotation), y + radius * Math.sin(rotation)
-    @drawPath commands, data, clockwise
-
-  drawRegularStar: (x, y, outer, length = 5, clockwise = 0) ->
-    cos = Math.cos Math.PI / length
-    @drawStar x, y, outer, outer * (2 * cos - 1 / cos), length, clockwise
-
-  drawStar: (x, y, outer, inner, length = 5, clockwise = 0) ->
-    commands = []
-    data = []
-    unitRotation = Math.PI / length
-    for i in [0..length * 2] by 1
-      commands.push if i is 0 then 0 else 1
-      radius = if (i & 1) is 0 then outer else inner
-      rotation = -Bitmap._PI_OVER_2 + unitRotation * i
-      data.push x + radius * Math.cos(rotation), y + radius * Math.sin(rotation)
-    @drawPath commands, data, clockwise
-
-
-
-
-
-
-
-
 
 #package sc.ript.geom
 
@@ -471,17 +363,40 @@ class path
 
 
 
-class ColorUtil
+#package sc.ript.utils
 
-  @toCSSString: (color, alpha = 1) ->
-    r = color >> 16 & 0xff
-    g = color >> 8 & 0xff
-    b = color & 0xff
-    alpha = if alpha < 0 then 0 else if alpha > 1 then 1 else alpha
-    if alpha is 1
-      "rgb(#{r},#{g},#{b})"
-    else
-      "rgba(#{r},#{g},#{b},#{alpha})"
+class NumberUtil
+
+  @RADIAN_PER_DEGREE: Math.PI / 180
+  @DEGREE_PER_RADIAN: 180 / Math.PI
+  @KB               : 1024
+  @MB               : @KB * @KB
+  @GB               : @MB * @KB
+  @TB               : @GB * @KB
+
+  @degree: (radian) ->
+    radian * @DEGREE_PER_RADIAN
+
+  @radian: (degree) ->
+    degree * @RADIAN_PER_DEGREE
+
+  @signify: (value, digit) ->
+    base = Math.pow 10, digit
+    (value * base >> 0) / base
+
+  @kb: (bytes) ->
+    bytes / @KB
+
+  @mb: (bytes) ->
+    bytes / @MB
+
+  @gb: (bytes) ->
+    bytes / @GB
+
+  @random: (a, b) ->
+    a + (b - a) * Math.random()
+
+
 
 #package sc.ript.utils
 
@@ -515,111 +430,258 @@ class ByteArray
     @data.size
 
 
-#package sc.ript.events
+class ColorUtil
+
+  @toCSSString: (color, alpha = 1) ->
+    r = color >> 16 & 0xff
+    g = color >> 8 & 0xff
+    b = color & 0xff
+    alpha = if alpha < 0 then 0 else if alpha > 1 then 1 else alpha
+    if alpha is 1
+      "rgb(#{r},#{g},#{b})"
+    else
+      "rgba(#{r},#{g},#{b},#{alpha})"
+
+#package sc.ript.display
+
+class Bitmap
+
+  @_PI_2                       : Math.PI * 2
+  @_PI_OVER_2                  : Math.PI / 2
+  @_ELLIPSE_CUBIC_BEZIER_HANDLE: (Math.SQRT2 - 1) * 4 / 3
+
+  constructor: (canvas) ->
+    unless canvas?
+      canvas = document.createElement 'canvas'
+    @canvas = canvas
+    @_context = @canvas.getContext '2d'
+    @_context.fillStyle = @_context.strokeStyle = 'rgba(0,0,0,0)'
+
+  width: (value) ->
+    return @canvas.width unless value?
+    @canvas.width = value
+
+  height: (value) ->
+    return @canvas.height unless value?
+    @canvas.height = value
+
+  clear: ->
+    @canvas.width = @canvas.width
+    @_context.fillStyle = @_context.strokeStyle = 'rgba(0,0,0,0)'
+
+  draw: (image, matrix) ->
+    if matrix?
+      @_context.setTransform matrix.m11, matrix.m12, matrix.m21, matrix.m22, matrix.tx, matrix.ty
+    @_context.drawImage image, 0, 0
+
+  encodeAsPNG: ->
+    ByteArray.fromDataURL @canvas.toDataURL 'image/png'
+
+  encodeAsJPG: (quality = 0.8) ->
+    ByteArray.fromDataURL @canvas.toDataURL 'image/jpeg', quality
 
 
-class EventEmitter
+  # Graphics API
 
-  constructor: ->
-    @_receivers = {}
+  lineStyle: (thickness = 1, color = 0, alpha = 1, capsStyle = CapsStyle.NONE, jointStyle = JointStyle.BEVEL, miterLimit = 10) ->
+    @_context.lineWidth = thickness
+    @_context.strokeStyle = ColorUtil.toCSSString color, alpha
+    @_context.lineCaps = capsStyle
+    @_context.lineJoin = jointStyle
+    @_context.miterLimit = miterLimit
 
-  on: (type, listener, useCapture = false, priority = 0) ->
-    if typeof listener isnt 'function'
-      throw new TypeError 'listener is\'t Function'
+    console.log 'lineStyle:', @_context.strokeStyle
 
-    # typeに対応するレシーバのリストが存在するかをチェック
-    unless @_receivers[type]?
-      @_receivers[type] = []
+  beginFill: (color = 0, alpha = 1) ->
+    @_context.fillStyle = ColorUtil.toCSSString color, alpha
 
-    receivers = @_receivers[type]
+    console.log 'fillStyle:', @_context.fillStyle
 
-    # リスナが格納済みではないかをチェック
-    i = receivers.length
-    while i--
-      receiver = reveicers[i]
-      if receiver.listener is listener
-        return @
+  moveTo: (x, y) ->
+    @_context.moveTo x, y
 
-    # リスナを格納し優先度順にソート
-    receivers.push
-      listener  : listener
-      useCapture: useCapture
-      priority  : priority
-    receivers.sort (a, b) ->
-      b.priority - a.priority
+  lineTo: (x, y) ->
+    @_context.lineTo x, y
 
-    @
+  drawRect: (x, y, width, height) ->
+    @_context.rect x, y, width, height
 
-  off: (type, listener) ->
-    receivers = @_receivers[type]
+  drawCircle: (x, y, radius, clockwise) ->
+    @_context.moveTo x + radius, y
+    @_context.arc x, y, radius, 0, Bitmap._PI_2, clockwise < 0
 
-    # typeに対応するレシーバが登録されているかをチェック
-    unless receivers
-      return @
+  drawEllipse: (x, y, width, height, clockwise = 0) ->
+    width /= 2
+    height /= 2
+    x += width
+    y += height
+    handleWidth = width * Bitmap._ELLIPSE_CUBIC_BEZIER_HANDLE
+    handleHeight = height * Bitmap._ELLIPSE_CUBIC_BEZIER_HANDLE
+    @drawPath [0, 3, 3, 3, 3], [
+      x + width, y
+      x + width, y + handleHeight, x + handleWidth, y + height, x, y + height
+      x - handleWidth, y + height, x - width, y + handleHeight, x - width, y
+      x - width, y - handleHeight, x - handleWidth, y - height, x, y - height
+      x + handleWidth, y - height, x + width, y - handleHeight, x + width, y
+    ], clockwise
 
-    # 格納されていればリストから取り除く
-    i = receivers.length
-    while i--
-      if receivers[i].listener is listener
-        receivers.splice i, 1
-      if receivers.length is 0
-        delete @_receivers[type]
+  curveTo: (x1, y1, x2, y2) ->
+    @_context.quadraticCurveTo x1, y1, x2, y2
 
-    @
+  cubicCurveTo: (x1, y1, x2, y2, x3, y3) ->
+    @_context.bezierCurveTo x1, y1, x2, y2, x3, y3
 
-  emit: (event) ->
-    receivers = @_receivers[event.type]
+  drawPath: (commands, data, clockwise = 0) ->
+    rect = new Rectangle data[0], data[1], 0, 0
+    for i in [1...data.length / 2] by 1
+      j = i * 2
+      rect.contain data[j], data[j + 1]
 
-    # typeに対応するレシーバが登録されているかをチェック
-    unless receivers?
-      return @
+    if clockwise < 0
+      d = []
+      i = 0
+      for command in commands
+        switch command
+          when 0, 1 then d.unshift data[i++], data[i++]
+          when 2
+            i += 4
+            d.unshift data[i - 2], data[i - 1], data[i - 4], data[i - 3]
+          when 3
+            i += 6
+            d.unshift data[i - 2], data[i - 1], data[i - 4], data[i - 3], data[i - 6], data[i - 5]
+      data = d
 
-    event.currentTarget = @
+      commands = commands.slice()
+      c = commands.shift()
+      commands.reverse()
+      commands.unshift c
 
-    # 全てのレシーバのリスナをイベントオブジェクトを引数としてコールする
-    # リスナはEventEmitterオブジェクトで束縛される
-    for receiver in receivers
-      do (receiver) =>
-        setTimeout =>
-          if event._isPropagationStoppedImmediately
-            return
-          receiver.listener.call @, event
-        , 0
+    i = 0
+    for command in commands
+      switch command
+        when GraphicsPathCommand.MOVE_TO
+          @_context.moveTo data[i++], data[i++]
+          console.log 'moveTo:', data[i-2],data[i-1]
+        when GraphicsPathCommand.LINE_TO
+          @_context.lineTo data[i++], data[i++]
+          console.log 'lineTo:', data[i-2],data[i-1]
+        when GraphicsPathCommand.CURVE_TO
+          @_context.quadraticCurveTo data[i++], data[i++], data[i++], data[i++]
+        when GraphicsPathCommand.CUBIC_CURVE_TO
+          @_context.bezierCurveTo data[i++], data[i++], data[i++], data[i++], data[i++], data[i++]
 
-    @
+    # Close path when start and end is equal
+    if data[0] is data[data.length - 2] and data[1] is data[data.length - 1]
+      @_context.closePath()
 
-#package sc.ript.utils
+    @_context.fill()
+    @_context.stroke()
 
-class NumberUtil
+  drawRoundRect: (x, y, width, height, ellipseW, ellipseH = ellipseW, clockwise = 0) ->
+    @drawPath [0, 1, 2, 1, 2, 1, 2, 1, 2], [
+      x + ellipseW, y
+      x + width - ellipseW, y
+      x + width, y, x + width, y + ellipseH
+      x + width, y + height - ellipseH
+      x + width, y + height, x + width - ellipseW, y + height
+      x + ellipseW, y + height
+      x, y + height, x, y + height - ellipseH
+      x, y + ellipseH
+      x, y, x + ellipseW, y
+    ], clockwise
 
-  @RADIAN_PER_DEGREE: Math.PI / 180
-  @DEGREE_PER_RADIAN: 180 / Math.PI
-  @KB               : 1024
-  @MB               : @KB * @KB
-  @GB               : @MB * @KB
-  @TB               : @GB * @KB
+  drawRegularPolygon: (x, y, radius, length = 3, clockwise = 0) ->
+    commands = []
+    data = []
+    unitRotation = Bitmap._PI_2 / length
+    for i in [0..length]
+      commands.push if i is 0 then 0 else 1
+      rotation = -Bitmap._PI_OVER_2 + unitRotation * i
+      data.push x + radius * Math.cos(rotation), y + radius * Math.sin(rotation)
+    @drawPath commands, data, clockwise
 
-  @degree: (radian) ->
-    radian * @DEGREE_PER_RADIAN
+  drawRegularStar: (x, y, outer, length = 5, clockwise = 0) ->
+    cos = Math.cos Math.PI / length
+    @drawStar x, y, outer, outer * (2 * cos - 1 / cos), length, clockwise
 
-  @radian: (degree) ->
-    degree * @RADIAN_PER_DEGREE
+  drawStar: (x, y, outer, inner, length = 5, clockwise = 0) ->
+    commands = []
+    data = []
+    unitRotation = Math.PI / length
+    for i in [0..length * 2] by 1
+      commands.push if i is 0 then 0 else 1
+      radius = if (i & 1) is 0 then outer else inner
+      rotation = -Bitmap._PI_OVER_2 + unitRotation * i
+      data.push x + radius * Math.cos(rotation), y + radius * Math.sin(rotation)
+    @drawPath commands, data, clockwise
 
-  @signify: (value, digit) ->
-    base = Math.pow 10, digit
-    (value * base >> 0) / base
 
-  @kb: (bytes) ->
-    bytes / @KB
 
-  @mb: (bytes) ->
-    bytes / @MB
 
-  @gb: (bytes) ->
-    bytes / @GB
 
-  @random: (a, b) ->
-    a + (b - a) * Math.random()
+
+
+
+
+class Type
+
+  @toString      : Object.prototype.toString
+  @hasOwnProperty: Object.prototype.hasOwnProperty
+
+  @isElement: (value) ->
+    value?.nodeType is 1
+
+  @isArray: Array.isArray or (value) ->
+    @toString.call(value) is '[object Array]'
+
+  @isArguments: do ->
+    isArguments = (value) ->
+      @toString.call(value) is "[object Arguments]"
+    if isArguments arguments
+      isArguments
+    else
+      (value) ->
+        value? and @hasOwnProperty.call(value, 'callee')
+
+
+  @isFunction: do ->
+    if typeof /./ is 'function'
+      (value) ->
+        @toString.call(value) is "[object Function]"
+    else
+      (value) ->
+        typeob value is 'function'
+
+  @isString: (value) ->
+    @toString.call(value) is "[object String]"
+
+  @isNumber: (value) ->
+    @toString.call(value) is "[object Number]"
+
+  @isDate: (value) ->
+    @toString.call(value) is "[object Date]"
+
+  @isRegExp: (value) ->
+    @toString.call(value) is "[object RegExp]"
+
+  @isFinite: (value) ->
+    isFinite(value) and not isNaN(parseFloat(value))
+
+  @isNaN: (value) ->
+    @isNumber(value) and value isnt +value
+
+  @isBoolean: (value) ->
+    value is true or value is false or @toString.call(value) is "[object Boolean]"
+
+  @isNull: (value) ->
+    value is null
+
+  @isUndefined: (value) ->
+    value?
+
+  @isObject: (value) ->
+    value is Object value
+
 
 
 
@@ -854,9 +916,10 @@ window[k] = v for k, v of {
       },
       "path": path,
       "utils": {
-        "ColorUtil": ColorUtil,
+        "NumberUtil": NumberUtil,
         "ByteArray": ByteArray,
-        "NumberUtil": NumberUtil
+        "ColorUtil": ColorUtil,
+        "Type": Type
       },
       "ui": {
         "Button": Button

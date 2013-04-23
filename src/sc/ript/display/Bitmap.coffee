@@ -7,22 +7,22 @@ class Bitmap
   @_ELLIPSE_CUBIC_BEZIER_HANDLE: (Math.SQRT2 - 1) * 4 / 3
 
   constructor: (canvas) ->
-    @_canvas = canvas
-    @_context = @_canvas.getContext '2d'
+    unless canvas?
+      canvas = document.createElement 'canvas'
+    @canvas = canvas
+    @_context = @canvas.getContext '2d'
     @_context.fillStyle = @_context.strokeStyle = 'rgba(0,0,0,0)'
-    console.log 'lineStyle:', @_context.strokeStyle
-    console.log 'fillStyle:', @_context.fillStyle
 
   width: (value) ->
-    return @_canvas.width unless value?
-    @_canvas.width = value
+    return @canvas.width unless value?
+    @canvas.width = value
 
   height: (value) ->
-    return @_canvas.height unless value?
-    @_canvas.height = value
+    return @canvas.height unless value?
+    @canvas.height = value
 
   clear: ->
-    @_canvas.width = @_canvas.width
+    @canvas.width = @canvas.width
     @_context.fillStyle = @_context.strokeStyle = 'rgba(0,0,0,0)'
 
   draw: (image, matrix) ->
@@ -31,10 +31,10 @@ class Bitmap
     @_context.drawImage image, 0, 0
 
   encodeAsPNG: ->
-    ByteArray.fromDataURL @_canvas.toDataURL 'image/png'
+    ByteArray.fromDataURL @canvas.toDataURL 'image/png'
 
   encodeAsJPG: (quality = 0.8) ->
-    ByteArray.fromDataURL @_canvas.toDataURL 'image/jpeg', quality
+    ByteArray.fromDataURL @canvas.toDataURL 'image/jpeg', quality
 
 
   # Graphics API
