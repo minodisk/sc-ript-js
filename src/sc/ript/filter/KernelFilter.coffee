@@ -22,9 +22,9 @@ class KernelFilter extends Filter
 
   _runKernel: (pixel, pixels, x, y, width, height) ->
     i = 0
-    for relY in [-@_radiusY + 1...@_radiusY] by 1
+    for relY in [1 - @_radiusY...@_radiusY] by 1
       absY = y + relY
-      for relX in [-@_radiusX + 1...@_radiusX] by 1
+      for relX in [1 - @_radiusX...@_radiusX] by 1
         absX = x + relX
         p = @_getPixel pixels, absX, absY, width, height
         amount = @_kernel[i]

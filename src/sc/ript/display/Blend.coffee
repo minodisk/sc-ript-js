@@ -9,7 +9,6 @@ class Blend
     if n < 0 then 0 else if n > 255 then 255 else n
 
   @scan: (method, src, dst) ->
-    console.log method
     method = Blend[method]
     throw new TypeError "#{ method } isn't defined." unless method?
     s = src.data
