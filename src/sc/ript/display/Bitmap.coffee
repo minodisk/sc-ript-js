@@ -20,6 +20,11 @@ class Bitmap extends DisplayObject
           width = source.width
           height = source.height
 
+    width = +width
+    height = +height
+    if width is 0 or height is 0
+      throw new TypeError 'Can\'t construct with 0 size'
+
     @canvas = document.createElement 'canvas'
     @width width
     @height height
@@ -67,11 +72,22 @@ class Bitmap extends DisplayObject
 
   draw: (image, matrix) ->
     if image instanceof Bitmap
+      if image.blendMode isnt BlendMode.NORMAL
+        src = image.getPixels()
+        dst = @getPixels()
+        dst = Blend.scan image.blendMode, src, dst
       image = image.canvas
     if matrix?
       @_context.setTransform matrix.m11, matrix.m12, matrix.m21, matrix.m22, matrix.tx, matrix.ty
-    @_context.drawImage image, 0, 0
+    if dst?
+      @_context.putImageData dst, 0, 0
+    else
+      @_context.drawImage image, 0, 0
     @_context.setTransform 1, 0, 0, 1, 0, 0
+
+  getPixels: (rect) ->
+    rect = new Rectangle 0, 0, @width(), @height() unless rect?
+    @_context.getImageData rect.x, rect.y, rect.width, rect.height
 
 
   ##############################################################################

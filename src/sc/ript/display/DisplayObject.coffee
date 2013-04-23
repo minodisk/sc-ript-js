@@ -7,6 +7,7 @@ class DisplayObject
   constructor: ->
     @x = @y = @rotation = 0
     @scaleX = @scaleY = 1
+    @blendMode = BlendMode.NORMAL
 
   matrix: ->
     new Matrix()
