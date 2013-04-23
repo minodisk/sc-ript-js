@@ -430,7 +430,7 @@ class ByteArray
     @data.size
 
 
-class ColorUtil
+class Color
 
   @toCSSString: (color, alpha = 1) ->
     r = color >> 16 & 0xff
@@ -485,7 +485,7 @@ class Bitmap
 
   lineStyle: (thickness = 1, color = 0, alpha = 1, capsStyle = CapsStyle.NONE, jointStyle = JointStyle.BEVEL, miterLimit = 10) ->
     @_context.lineWidth = thickness
-    @_context.strokeStyle = ColorUtil.toCSSString color, alpha
+    @_context.strokeStyle = Color.toCSSString color, alpha
     @_context.lineCaps = capsStyle
     @_context.lineJoin = jointStyle
     @_context.miterLimit = miterLimit
@@ -493,7 +493,7 @@ class Bitmap
     console.log 'lineStyle:', @_context.strokeStyle
 
   beginFill: (color = 0, alpha = 1) ->
-    @_context.fillStyle = ColorUtil.toCSSString color, alpha
+    @_context.fillStyle = Color.toCSSString color, alpha
 
     console.log 'fillStyle:', @_context.fillStyle
 
@@ -918,7 +918,7 @@ window[k] = v for k, v of {
       "utils": {
         "NumberUtil": NumberUtil,
         "ByteArray": ByteArray,
-        "ColorUtil": ColorUtil,
+        "Color": Color,
         "Type": Type
       },
       "ui": {

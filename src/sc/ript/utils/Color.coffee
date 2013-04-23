@@ -1,4 +1,4 @@
-class ColorUtil
+class Color
 
   @toCSSString: (color, alpha = 1) ->
     r = color >> 16 & 0xff
