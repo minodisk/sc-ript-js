@@ -344,7 +344,7 @@ class Blend
       dr
       dg
       db
-      sa
+      da * sa / 0xff
     ]
 
 
@@ -493,6 +493,11 @@ class Filter
   _evaluatePixel: (pixels, x, y, width, height) ->
     pixels[y][x]
 
+  _getPixel: (pixels, x, y, width, height) ->
+    x = if x < 0 then 0 else if x > width - 1 then width - 1 else x
+    y = if y < 0 then 0 else if y > height - 1 then height - 1 else y
+    pixels[y][x]
+
 
 
 #package sc.ript
@@ -553,196 +558,6 @@ class NumberUtil
 
   @random: (a, b) ->
     a + (b - a) * Math.random()
-
-
-
-#package sc.ript.geom
-
-class Matrix
-
-  constructor: (@m11 = 1, @m12 = 0, @m21 = 0, @m22 = 1, @tx = 0, @ty = 0) ->
-
-  translate  : (x = 0, y = 0) ->
-    @concat new Matrix 1, 0, 0, 1, x, y
-    @
-
-  scale: (x = 1, y = 1) ->
-    @concat new Matrix x, 0, 0, y, 0, 0
-    @
-
-  rotate: (theta) ->
-    s = Math.sin theta
-    c = Math.cos theta
-    @concat new Matrix c, s, -s, c, 0, 0
-    @
-
-  concat: (matrix) ->
-    { m11, m12, m21, m22, tx, ty } = @
-    @m11 = m11 * matrix.m11 + m12 * matrix.m21
-    @m12 = m11 * matrix.m12 + m12 * matrix.m22
-    @m21 = m21 * matrix.m11 + m22 * matrix.m21
-    @m22 = m21 * matrix.m12 + m22 * matrix.m22
-    @tx = tx * matrix.m11 + ty * matrix.m21 + matrix.tx
-    @ty = tx * matrix.m12 + ty * matrix.m22 + matrix.ty
-    @
-
-  invert: ->
-    { m11, m12, m21, m22, tx, ty } = @
-    d = m11 * m22 - m12 * m21
-    @m11 = m22 / d
-    @m12 = -m12 / d
-    @m21 = -m21 / d
-    @m22 = m11 / d
-    @m41 = (m21 * ty - m22 * tx) / d
-    @m42 = (m12 * tx - m11 * ty) / d
-    @
-
-
-#package sc.ript.deferred
-
-
-class DLoader
-
-  @loadData: (url, method = 'get', data = '') ->
-    d = new Deferred
-
-    if window.ActiveXObject?
-      try
-        xhr = new ActiveXObject 'Msxml2.XMLHTTP'
-      catch err
-        try
-          xhr = new ActiveXObject 'Microsoft.XMLHTTP'
-        catch err
-          throw new TypeError 'doesn\'t support XMLHttpRequest'
-    else if window.XMLHttpRequest
-      xhr = new XMLHttpRequest
-    else
-      throw new TypeError 'doesn\'t support XMLHttpRequest'
-
-    xhr.onerror = (err) ->
-      d.fail err
-    xhr.onreadystatechange = ->
-      unless xhr.readyState is 4
-        # progress
-        return
-      d.call xhr.responseText
-    xhr.open method, url, true
-    xhr.send data
-
-    d
-
-  @loadImage: (url) ->
-    d = new Deferred
-    image = new Image
-    image.onerror = (err) ->
-      d.fail err
-    image.onload = ->
-      d.call image
-    image.src = url
-    d
-
-  @loadFile: (file) ->
-    d = new Deferred
-    reader = new FileReader
-    reader.onerror = (err) ->
-      d.fail err
-    reader.onload = ->
-      d.call reader.result
-    reader.readAsDataURL file
-    d
-
-
-
-#package sc.ript.geom
-
-class Point
-
-  @equals: (pt0, pt1) ->
-    pt0.equals pt1
-
-  @dotProduct: (pt0, pt1) ->
-    pt0.x * pt1.x + pt0.y * pt1.y
-
-  @angle: (pt0, pt1) ->
-    pt1.subtract(pt0).angle()
-
-  @distance: (pt0, pt1) ->
-    pt1.subtract(pt0).length()
-
-  @interpolate: (pt0, pt1, ratio) ->
-    pt0.add pt1.subtract(pt0).multiply(ratio)
-
-
-  constructor: (x = 0, y = 0) ->
-    @x = +x
-    @y = +y
-
-  angle      : (value) ->
-    return Math.atan2 @y, @x unless value?
-
-    length = @length()
-    @x = length * Math.cos value
-    @y = length * Math.sin value
-
-  length: (value) ->
-    return Math.sqrt @x * @x + @y * @y unless value?
-
-    angle = @angle()
-    @x = value * Math.cos angle
-    @y = value * Math.sin angle
-
-  clone: ->
-    new Point @x, @y
-
-  equals: (pt) ->
-    @x is pt.x and @y is pt.y
-
-  add: (pt) ->
-    new Point @x + pt.x, @y + pt.y
-
-  subtract: (pt) ->
-    new Point @x - pt.x, @y - pt.y
-
-  multiply: (value) ->
-    new Point @x * value, @y * value
-
-  divide: (value) ->
-    new Point @x / value, @y / value
-
-
-
-#package sc.ript.color
-
-class RGB
-
-  @average: (rgbs...) ->
-    r = g = b = 0
-    for rgb in rgbs
-      r += rgb.r
-      g += rgb.g
-      b += rgb.b
-    length = rgbs.length
-    r /= length
-    g /= length
-    b /= length
-    new RGB r, g, b
-
-
-  constructor: (@r, @g, @b) ->
-    if arguments.length is 1
-      hex = r
-      @r = hex >> 16 & 0xff
-      @g = hex >> 8 & 0xff
-      @b = hex & 0xff
-    @normalize()
-
-  normalize: ->
-    @r &= 0xff
-    @g &= 0xff
-    @b &= 0xff
-
-  toHex: ->
-    @r << 16 | @g << 8 | @b
 
 
 
@@ -919,6 +734,196 @@ class Rectangle
 
 
 
+#package sc.ript.deferred
+
+
+class DLoader
+
+  @loadData: (url, method = 'get', data = '') ->
+    d = new Deferred
+
+    if window.ActiveXObject?
+      try
+        xhr = new ActiveXObject 'Msxml2.XMLHTTP'
+      catch err
+        try
+          xhr = new ActiveXObject 'Microsoft.XMLHTTP'
+        catch err
+          throw new TypeError 'doesn\'t support XMLHttpRequest'
+    else if window.XMLHttpRequest
+      xhr = new XMLHttpRequest
+    else
+      throw new TypeError 'doesn\'t support XMLHttpRequest'
+
+    xhr.onerror = (err) ->
+      d.fail err
+    xhr.onreadystatechange = ->
+      unless xhr.readyState is 4
+        # progress
+        return
+      d.call xhr.responseText
+    xhr.open method, url, true
+    xhr.send data
+
+    d
+
+  @loadImage: (url) ->
+    d = new Deferred
+    image = new Image
+    image.onerror = (err) ->
+      d.fail err
+    image.onload = ->
+      d.call image
+    image.src = url
+    d
+
+  @loadFile: (file) ->
+    d = new Deferred
+    reader = new FileReader
+    reader.onerror = (err) ->
+      d.fail err
+    reader.onload = ->
+      d.call reader.result
+    reader.readAsDataURL file
+    d
+
+
+
+#package sc.ript.geom
+
+class Matrix
+
+  constructor: (@m11 = 1, @m12 = 0, @m21 = 0, @m22 = 1, @tx = 0, @ty = 0) ->
+
+  translate  : (x = 0, y = 0) ->
+    @concat new Matrix 1, 0, 0, 1, x, y
+    @
+
+  scale: (x = 1, y = 1) ->
+    @concat new Matrix x, 0, 0, y, 0, 0
+    @
+
+  rotate: (theta) ->
+    s = Math.sin theta
+    c = Math.cos theta
+    @concat new Matrix c, s, -s, c, 0, 0
+    @
+
+  concat: (matrix) ->
+    { m11, m12, m21, m22, tx, ty } = @
+    @m11 = m11 * matrix.m11 + m12 * matrix.m21
+    @m12 = m11 * matrix.m12 + m12 * matrix.m22
+    @m21 = m21 * matrix.m11 + m22 * matrix.m21
+    @m22 = m21 * matrix.m12 + m22 * matrix.m22
+    @tx = tx * matrix.m11 + ty * matrix.m21 + matrix.tx
+    @ty = tx * matrix.m12 + ty * matrix.m22 + matrix.ty
+    @
+
+  invert: ->
+    { m11, m12, m21, m22, tx, ty } = @
+    d = m11 * m22 - m12 * m21
+    @m11 = m22 / d
+    @m12 = -m12 / d
+    @m21 = -m21 / d
+    @m22 = m11 / d
+    @m41 = (m21 * ty - m22 * tx) / d
+    @m42 = (m12 * tx - m11 * ty) / d
+    @
+
+
+#package sc.ript.color
+
+class RGB
+
+  @average: (rgbs...) ->
+    r = g = b = 0
+    for rgb in rgbs
+      r += rgb.r
+      g += rgb.g
+      b += rgb.b
+    length = rgbs.length
+    r /= length
+    g /= length
+    b /= length
+    new RGB r, g, b
+
+
+  constructor: (@r, @g, @b) ->
+    if arguments.length is 1
+      hex = r
+      @r = hex >> 16 & 0xff
+      @g = hex >> 8 & 0xff
+      @b = hex & 0xff
+    @normalize()
+
+  normalize: ->
+    @r &= 0xff
+    @g &= 0xff
+    @b &= 0xff
+
+  toHex: ->
+    @r << 16 | @g << 8 | @b
+
+
+
+#package sc.ript.geom
+
+class Point
+
+  @equals: (pt0, pt1) ->
+    pt0.equals pt1
+
+  @dotProduct: (pt0, pt1) ->
+    pt0.x * pt1.x + pt0.y * pt1.y
+
+  @angle: (pt0, pt1) ->
+    pt1.subtract(pt0).angle()
+
+  @distance: (pt0, pt1) ->
+    pt1.subtract(pt0).length()
+
+  @interpolate: (pt0, pt1, ratio) ->
+    pt0.add pt1.subtract(pt0).multiply(ratio)
+
+
+  constructor: (x = 0, y = 0) ->
+    @x = +x
+    @y = +y
+
+  angle      : (value) ->
+    return Math.atan2 @y, @x unless value?
+
+    length = @length()
+    @x = length * Math.cos value
+    @y = length * Math.sin value
+
+  length: (value) ->
+    return Math.sqrt @x * @x + @y * @y unless value?
+
+    angle = @angle()
+    @x = value * Math.cos angle
+    @y = value * Math.sin angle
+
+  clone: ->
+    new Point @x, @y
+
+  equals: (pt) ->
+    @x is pt.x and @y is pt.y
+
+  add: (pt) ->
+    new Point @x + pt.x, @y + pt.y
+
+  subtract: (pt) ->
+    new Point @x - pt.x, @y - pt.y
+
+  multiply: (value) ->
+    new Point @x * value, @y * value
+
+  divide: (value) ->
+    new Point @x / value, @y / value
+
+
+
 #package sc.ript.display
 
 class JointStyle
@@ -1064,6 +1069,36 @@ class EventEmitter
 
 #package sc.ript.filter
 
+class ThresholdFilter extends Filter
+
+  # @param operation "<", "<=", ">", ">=", "==", "!="
+  constructor: (@threshold, @operation) ->
+    super()
+
+  _evaluatePixel: (pixels, x, y, width, height) ->
+    [r, g, b, a] = pixels[y][x]
+    color = a << 24 | r << 16 | g << 8 | b
+    switch @operation
+      when "<"
+        color = if color < @threshold then color else 0
+      when "<="
+        color = if color <= @threshold then color else 0
+      when ">"
+        color = if color > @threshold then color else 0
+      when ">="
+        color = if color >= @threshold then color else 0
+      when "=="
+        color = if color == @threshold then color else 0
+      when "!="
+        color = if color != @threshold then color else 0
+    [color >> 16 & 0xff, color >> 8 & 0xff, color & 0xff, color >> 24 & 0xff]
+
+
+
+
+
+#package sc.ript.filter
+
 class KernelFilter extends Filter
 
   constructor: (radiusX, radiusY, kernel) ->
@@ -1096,11 +1131,6 @@ class KernelFilter extends Filter
         pixel[1] += p[1] * amount
         pixel[2] += p[2] * amount
         i++
-
-  _getPixel: (pixels, x, y, width, height) ->
-    x = if x < 0 then 0 else if x > width - 1 then width - 1 else x
-    y = if y < 0 then 0 else if y > height - 1 then height - 1 else y
-    pixels[y][x]
   
 
 
@@ -1663,14 +1693,15 @@ window[k] = v for k, v of {
       },
       "filter": {
         "Filter": Filter,
+        "ThresholdFilter": ThresholdFilter,
         "KernelFilter": KernelFilter,
         "BirateralFilter": BirateralFilter
       },
       "path": path,
       "geom": {
+        "Rectangle": Rectangle,
         "Matrix": Matrix,
-        "Point": Point,
-        "Rectangle": Rectangle
+        "Point": Point
       },
       "deferred": {
         "DLoader": DLoader

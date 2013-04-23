@@ -29,3 +29,8 @@ class Filter
   _evaluatePixel: (pixels, x, y, width, height) ->
     pixels[y][x]
 
+  _getPixel: (pixels, x, y, width, height) ->
+    x = if x < 0 then 0 else if x > width - 1 then width - 1 else x
+    y = if y < 0 then 0 else if y > height - 1 then height - 1 else y
+    pixels[y][x]
+
