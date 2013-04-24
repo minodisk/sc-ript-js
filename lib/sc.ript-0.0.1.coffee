@@ -1602,7 +1602,7 @@ class Bitmap extends DisplayObject
       data.push point.x, point.y
     @drawPath commands, data
 
-  drawSpline: (points, interpolation = 50) ->
+  drawSpline: (points, interpolation = 10) ->
     commands = []
     data = []
 
