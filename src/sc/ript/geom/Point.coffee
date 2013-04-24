@@ -16,6 +16,13 @@ class Point
 
   @interpolate: (pt0, pt1, ratio) ->
     pt0.add pt1.subtract(pt0).multiply(ratio)
+    
+  @inflate: (src, dst, pixel) ->
+    dx = src.x - dst.x
+    dy = src.y - dst.y
+    d = Math.sqrt dx * dx + dy * dy
+    ratio = 1 + pixel / d
+    @interpolate src, dst, ratio
 
 
   constructor: (x = 0, y = 0) ->
