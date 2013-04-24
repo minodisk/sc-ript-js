@@ -1656,14 +1656,14 @@ class Bitmap extends DisplayObject
 
 #package sc.ript.filter
 
-class BirateralFilter extends KernelFilter
+class BilateralFilter extends KernelFilter
 
   @_SIGMA_8BIT: 2.04045
 
   constructor: (radiusX = 2, radiusY = 2, threshold = 0x20) ->
     # generate kernel
     kernel = []
-    gaussSpaceCoeff = -0.5 / ((radiusX / BirateralFilter._SIGMA_8BIT) * (radiusY / BirateralFilter._SIGMA_8BIT))
+    gaussSpaceCoeff = -0.5 / ((radiusX / BilateralFilter._SIGMA_8BIT) * (radiusY / BilateralFilter._SIGMA_8BIT))
     for relY in [1 - radiusY...radiusY] by 1
       for relX in [1 - radiusX...radiusX] by 1
         kernel.push Math.exp((relX * relX + relY * relY) * gaussSpaceCoeff)
@@ -1671,7 +1671,7 @@ class BirateralFilter extends KernelFilter
     # call super constructor
     super radiusX, radiusY, kernel
 
-    sigmaColor = threshold / 0xff * Math.sqrt(0xff * 0xff * 3) / BirateralFilter._SIGMA_8BIT
+    sigmaColor = threshold / 0xff * Math.sqrt(0xff * 0xff * 3) / BilateralFilter._SIGMA_8BIT
     @_gaussColorCoeff = -0.5 / (sigmaColor * sigmaColor)
 
   _runKernel: (pixel, pixels, x, y, width, height) ->
@@ -1730,7 +1730,7 @@ window[k] = v for k, v of {
         "ThresholdFilter": ThresholdFilter,
         "KernelFilter": KernelFilter,
         "BlurFilter": BlurFilter,
-        "BirateralFilter": BirateralFilter
+        "BilateralFilter": BilateralFilter
       },
       "serializer": {
         "QueryString": QueryString
