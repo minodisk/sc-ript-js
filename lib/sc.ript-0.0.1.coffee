@@ -173,6 +173,38 @@ class EventEmitter
 
     @
 
+#package sc.ript.utils
+
+class ByteArray
+
+  @BlobBuilder: window.BlobBuilder or window.WebKitBlobBuilder or window.MozBlobBuilder
+
+  @fromDataURL: (dataURL) ->
+    mimeString = dataURL.split(',')[0].split(':')[1].split(';')[0]
+    byteString = atob dataURL.split(',')[1]
+
+    ab = new ArrayBuffer byteString.length
+    ia = new Uint8Array ab
+    for i in [0...byteString.length] by 1
+      ia[i] = byteString.charCodeAt i
+
+    if @BlobBuilder?
+      bb = new ByteArray.BlobBuilder
+      bb.append ab
+      new ByteArray bb.getBlob mimeString
+    else
+      new ByteArray new Blob [ab], type: mimeString
+
+# for Chrome
+#      new ByteArray new Blob [ia], type: mimeString
+
+
+  constructor: (@data) ->
+
+  length: ->
+    @data.size
+
+
 #package sc.ript.color
 
 class HSV
@@ -245,36 +277,15 @@ class HSV
 
 
 
-#package sc.ript.utils
+#package sc.ript.serializer
 
-class ByteArray
+class QueryString
 
-  @BlobBuilder: window.BlobBuilder or window.WebKitBlobBuilder or window.MozBlobBuilder
-
-  @fromDataURL: (dataURL) ->
-    mimeString = dataURL.split(',')[0].split(':')[1].split(';')[0]
-    byteString = atob dataURL.split(',')[1]
-
-    ab = new ArrayBuffer byteString.length
-    ia = new Uint8Array ab
-    for i in [0...byteString.length] by 1
-      ia[i] = byteString.charCodeAt i
-
-    if @BlobBuilder?
-      bb = new ByteArray.BlobBuilder
-      bb.append ab
-      new ByteArray bb.getBlob mimeString
-    else
-      new ByteArray new Blob [ab], type: mimeString
-
-# for Chrome
-#      new ByteArray new Blob [ia], type: mimeString
-
-
-  constructor: (@data) ->
-
-  length: ->
-    @data.size
+  @stringify: (obj, sep = '&', eq = '=') ->
+    kvs = []
+    for key, val of obj
+      kvs.push "#{key}#{eq}#{val}"
+    kvs.join sep
 
 
 #package sc.ript.filter
@@ -315,17 +326,6 @@ class Filter
     y = if y < 0 then 0 else if y > height - 1 then height - 1 else y
     pixels[y][x]
 
-
-
-#package sc.ript.serializer
-
-class QueryString
-
-  @stringify: (obj, sep = '&', eq = '=') ->
-    kvs = []
-    for key, val of obj
-      kvs.push "#{key}#{eq}#{val}"
-    kvs.join sep
 
 
 #package tc.ript.display
@@ -649,196 +649,6 @@ class NumberUtil
 
 #package sc.ript.geom
 
-class Matrix
-
-  constructor: (@m11 = 1, @m12 = 0, @m21 = 0, @m22 = 1, @tx = 0, @ty = 0) ->
-
-  translate  : (x = 0, y = 0) ->
-    @concat new Matrix 1, 0, 0, 1, x, y
-    @
-
-  scale: (x = 1, y = 1) ->
-    @concat new Matrix x, 0, 0, y, 0, 0
-    @
-
-  rotate: (theta) ->
-    s = Math.sin theta
-    c = Math.cos theta
-    @concat new Matrix c, s, -s, c, 0, 0
-    @
-
-  concat: (matrix) ->
-    { m11, m12, m21, m22, tx, ty } = @
-    @m11 = m11 * matrix.m11 + m12 * matrix.m21
-    @m12 = m11 * matrix.m12 + m12 * matrix.m22
-    @m21 = m21 * matrix.m11 + m22 * matrix.m21
-    @m22 = m21 * matrix.m12 + m22 * matrix.m22
-    @tx = tx * matrix.m11 + ty * matrix.m21 + matrix.tx
-    @ty = tx * matrix.m12 + ty * matrix.m22 + matrix.ty
-    @
-
-  invert: ->
-    { m11, m12, m21, m22, tx, ty } = @
-    d = m11 * m22 - m12 * m21
-    @m11 = m22 / d
-    @m12 = -m12 / d
-    @m21 = -m21 / d
-    @m22 = m11 / d
-    @m41 = (m21 * ty - m22 * tx) / d
-    @m42 = (m12 * tx - m11 * ty) / d
-    @
-
-
-#package sc.ript.deferred
-
-
-class DLoader
-
-  @loadData: (url, method = 'get', data = '') ->
-    d = new Deferred
-
-    if window.ActiveXObject?
-      try
-        xhr = new ActiveXObject 'Msxml2.XMLHTTP'
-      catch err
-        try
-          xhr = new ActiveXObject 'Microsoft.XMLHTTP'
-        catch err
-          throw new TypeError 'doesn\'t support XMLHttpRequest'
-    else if window.XMLHttpRequest
-      xhr = new XMLHttpRequest
-    else
-      throw new TypeError 'doesn\'t support XMLHttpRequest'
-
-    xhr.onerror = (err) ->
-      d.fail err
-    xhr.onreadystatechange = ->
-      unless xhr.readyState is 4
-        # progress
-        return
-      d.call xhr.responseText
-    xhr.open method, url, true
-    xhr.send data
-
-    d
-
-  @loadImage: (url) ->
-    d = new Deferred
-    image = new Image
-    image.onerror = (err) ->
-      d.fail err
-    image.onload = ->
-      d.call image
-    image.src = url
-    d
-
-  @loadFile: (file) ->
-    d = new Deferred
-    reader = new FileReader
-    reader.onerror = (err) ->
-      d.fail err
-    reader.onload = ->
-      d.call reader.result
-    reader.readAsDataURL file
-    d
-
-
-
-#package sc.ript.geom
-
-class Point
-
-  @equals: (pt0, pt1) ->
-    pt0.equals pt1
-
-  @dotProduct: (pt0, pt1) ->
-    pt0.x * pt1.x + pt0.y * pt1.y
-
-  @angle: (pt0, pt1) ->
-    pt1.subtract(pt0).angle()
-
-  @distance: (pt0, pt1) ->
-    pt1.subtract(pt0).length()
-
-  @interpolate: (pt0, pt1, ratio) ->
-    pt0.add pt1.subtract(pt0).multiply(ratio)
-
-
-  constructor: (x = 0, y = 0) ->
-    @x = +x
-    @y = +y
-
-  angle      : (value) ->
-    return Math.atan2 @y, @x unless value?
-
-    length = @length()
-    @x = length * Math.cos value
-    @y = length * Math.sin value
-
-  length: (value) ->
-    return Math.sqrt @x * @x + @y * @y unless value?
-
-    angle = @angle()
-    @x = value * Math.cos angle
-    @y = value * Math.sin angle
-
-  clone: ->
-    new Point @x, @y
-
-  equals: (pt) ->
-    @x is pt.x and @y is pt.y
-
-  add: (pt) ->
-    new Point @x + pt.x, @y + pt.y
-
-  subtract: (pt) ->
-    new Point @x - pt.x, @y - pt.y
-
-  multiply: (value) ->
-    new Point @x * value, @y * value
-
-  divide: (value) ->
-    new Point @x / value, @y / value
-
-
-
-#package sc.ript.color
-
-class RGB
-
-  @average: (rgbs...) ->
-    r = g = b = 0
-    for rgb in rgbs
-      r += rgb.r
-      g += rgb.g
-      b += rgb.b
-    length = rgbs.length
-    r /= length
-    g /= length
-    b /= length
-    new RGB r, g, b
-
-
-  constructor: (@r, @g, @b) ->
-    if arguments.length is 1
-      hex = r
-      @r = hex >> 16 & 0xff
-      @g = hex >> 8 & 0xff
-      @b = hex & 0xff
-    @normalize()
-
-  normalize: ->
-    @r &= 0xff
-    @g &= 0xff
-    @b &= 0xff
-
-  toHex: ->
-    @r << 16 | @g << 8 | @b
-
-
-
-#package sc.ript.geom
-
 
 class Rectangle
 
@@ -1010,6 +820,196 @@ class Rectangle
 
 
 
+#package sc.ript.deferred
+
+
+class DLoader
+
+  @loadData: (url, method = 'get', data = '') ->
+    d = new Deferred
+
+    if window.ActiveXObject?
+      try
+        xhr = new ActiveXObject 'Msxml2.XMLHTTP'
+      catch err
+        try
+          xhr = new ActiveXObject 'Microsoft.XMLHTTP'
+        catch err
+          throw new TypeError 'doesn\'t support XMLHttpRequest'
+    else if window.XMLHttpRequest
+      xhr = new XMLHttpRequest
+    else
+      throw new TypeError 'doesn\'t support XMLHttpRequest'
+
+    xhr.onerror = (err) ->
+      d.fail err
+    xhr.onreadystatechange = ->
+      unless xhr.readyState is 4
+        # progress
+        return
+      d.call xhr.responseText
+    xhr.open method, url, true
+    xhr.send data
+
+    d
+
+  @loadImage: (url) ->
+    d = new Deferred
+    image = new Image
+    image.onerror = (err) ->
+      d.fail err
+    image.onload = ->
+      d.call image
+    image.src = url
+    d
+
+  @loadFile: (file) ->
+    d = new Deferred
+    reader = new FileReader
+    reader.onerror = (err) ->
+      d.fail err
+    reader.onload = ->
+      d.call reader.result
+    reader.readAsDataURL file
+    d
+
+
+
+#package sc.ript.geom
+
+class Point
+
+  @equals: (pt0, pt1) ->
+    pt0.equals pt1
+
+  @dotProduct: (pt0, pt1) ->
+    pt0.x * pt1.x + pt0.y * pt1.y
+
+  @angle: (pt0, pt1) ->
+    pt1.subtract(pt0).angle()
+
+  @distance: (pt0, pt1) ->
+    pt1.subtract(pt0).length()
+
+  @interpolate: (pt0, pt1, ratio) ->
+    pt0.add pt1.subtract(pt0).multiply(ratio)
+
+
+  constructor: (x = 0, y = 0) ->
+    @x = +x
+    @y = +y
+
+  angle      : (value) ->
+    return Math.atan2 @y, @x unless value?
+
+    length = @length()
+    @x = length * Math.cos value
+    @y = length * Math.sin value
+
+  length: (value) ->
+    return Math.sqrt @x * @x + @y * @y unless value?
+
+    angle = @angle()
+    @x = value * Math.cos angle
+    @y = value * Math.sin angle
+
+  clone: ->
+    new Point @x, @y
+
+  equals: (pt) ->
+    @x is pt.x and @y is pt.y
+
+  add: (pt) ->
+    new Point @x + pt.x, @y + pt.y
+
+  subtract: (pt) ->
+    new Point @x - pt.x, @y - pt.y
+
+  multiply: (value) ->
+    new Point @x * value, @y * value
+
+  divide: (value) ->
+    new Point @x / value, @y / value
+
+
+
+#package sc.ript.color
+
+class RGB
+
+  @average: (rgbs...) ->
+    r = g = b = 0
+    for rgb in rgbs
+      r += rgb.r
+      g += rgb.g
+      b += rgb.b
+    length = rgbs.length
+    r /= length
+    g /= length
+    b /= length
+    new RGB r, g, b
+
+
+  constructor: (@r, @g, @b) ->
+    if arguments.length is 1
+      hex = r
+      @r = hex >> 16 & 0xff
+      @g = hex >> 8 & 0xff
+      @b = hex & 0xff
+    @normalize()
+
+  normalize: ->
+    @r &= 0xff
+    @g &= 0xff
+    @b &= 0xff
+
+  toHex: ->
+    @r << 16 | @g << 8 | @b
+
+
+
+#package sc.ript.geom
+
+class Matrix
+
+  constructor: (@m11 = 1, @m12 = 0, @m21 = 0, @m22 = 1, @tx = 0, @ty = 0) ->
+
+  translate  : (x = 0, y = 0) ->
+    @concat new Matrix 1, 0, 0, 1, x, y
+    @
+
+  scale: (x = 1, y = 1) ->
+    @concat new Matrix x, 0, 0, y, 0, 0
+    @
+
+  rotate: (theta) ->
+    s = Math.sin theta
+    c = Math.cos theta
+    @concat new Matrix c, s, -s, c, 0, 0
+    @
+
+  concat: (matrix) ->
+    { m11, m12, m21, m22, tx, ty } = @
+    @m11 = m11 * matrix.m11 + m12 * matrix.m21
+    @m12 = m11 * matrix.m12 + m12 * matrix.m22
+    @m21 = m21 * matrix.m11 + m22 * matrix.m21
+    @m22 = m21 * matrix.m12 + m22 * matrix.m22
+    @tx = tx * matrix.m11 + ty * matrix.m21 + matrix.tx
+    @ty = tx * matrix.m12 + ty * matrix.m22 + matrix.ty
+    @
+
+  invert: ->
+    { m11, m12, m21, m22, tx, ty } = @
+    d = m11 * m22 - m12 * m21
+    @m11 = m22 / d
+    @m12 = -m12 / d
+    @m21 = -m21 / d
+    @m22 = m11 / d
+    @m41 = (m21 * ty - m22 * tx) / d
+    @m42 = (m12 * tx - m11 * ty) / d
+    @
+
+
 #package sc.ript.event
 
 
@@ -1114,7 +1114,7 @@ class ThresholdFilter extends Filter
 
 class KernelFilter extends Filter
 
-  constructor: (radiusX, radiusY, kernel, quality) ->
+  constructor: (radiusX, radiusY, kernel, quality, applyAlpha) ->
     super quality
 
     @_radiusX = radiusX
@@ -1124,11 +1124,14 @@ class KernelFilter extends Filter
     if kernel.length isnt @_width * @_height
       throw new TypeError 'kernel length isn\'t match with radius'
 
+    @_applyAlpha = applyAlpha
     @_kernel = kernel
 
   _evaluatePixel: (pixels, x, y, width, height) ->
-    pixel = [0, 0, 0, pixels[y][x][3]]
+    pixel = [0, 0, 0, 0]
     @_runKernel pixel, pixels, x, y, width, height
+    unless @_applyAlpha
+      pixel[3] = pixels[y][x][3]
     pixel
 
   _runKernel: (pixel, pixels, x, y, width, height) ->
@@ -1142,8 +1145,52 @@ class KernelFilter extends Filter
         pixel[0] += p[0] * amount
         pixel[1] += p[1] * amount
         pixel[2] += p[2] * amount
+        pixel[3] += p[3] * amount
         i++
   
+
+
+
+#package sc.ript.filter
+
+class GaussianBlurFilter extends KernelFilter
+
+  constructor: (radiusX, radiusY, sigma = 0.84089642) ->
+    s = 2 * sigma * sigma
+    weight = 0
+    kernel = []
+    for dy in [1 - radiusY...radiusY] by 1
+      for dx in [1 - radiusX...radiusX] by 1
+        w = 1 / (s * Math.PI) * Math.exp(-(dx * dx + dy * dy) / s)
+        weight += w
+        kernel.push w
+    kernel[i] /= weight for i in [0...kernel.length] by 1
+    super radiusX, radiusY, kernel, 1, true
+
+    console.log @_kernel
+
+
+#package sc.ript.filter
+
+
+# |R|   |m0  m1  m2  m3 ||r|   |m4 |
+# |G| = |m5  m6  m7  m8 ||g| + |m9 |
+# |B|   |m10 m11 m12 m13||b|   |m14|
+# |A|   |m15 m16 m17 m18||a|   |m19|
+class ColorMatrixFilter extends Filter
+
+  constructor: (@matrix) ->
+    super()
+
+  _evaluatePixel: (pixels, x, y, width, height) ->
+    m = @matrix
+    [r, g, b, a] = pixels[y][x]
+    [
+      r * m[0] + g * m[1] + b * m[2] + a * m[3] + m[4]
+      r * m[5] + g * m[6] + b * m[7] + a * m[8] + m[9]
+      r * m[10] + g * m[11] + b * m[12] + a * m[13] + m[14]
+      r * m[15] + g * m[16] + b * m[17] + a * m[18] + m[19]
+    ]
 
 
 
@@ -1305,15 +1352,47 @@ class Button extends EventEmitter
 
 #package sc.ript.filter
 
-class BlurFilter extends KernelFilter
+class BilateralFilter extends KernelFilter
 
-  constructor: (radiusX, radiusY, quality) ->
-    side = radiusX * 2 - 1
-    length = side * side
-    invert = 1 / length
+  @_SIGMA_8BIT: 2.04045
+
+  constructor: (radiusX = 2, radiusY = 2, threshold = 0x20) ->
+    # generate kernel
     kernel = []
-    kernel.push invert while length--
-    super radiusX, radiusY, kernel, quality
+    gaussSpaceCoeff = -0.5 / ((radiusX / BilateralFilter._SIGMA_8BIT) * (radiusY / BilateralFilter._SIGMA_8BIT))
+    for relY in [1 - radiusY...radiusY] by 1
+      for relX in [1 - radiusX...radiusX] by 1
+        kernel.push Math.exp((relX * relX + relY * relY) * gaussSpaceCoeff)
+
+    # call super constructor
+    super radiusX, radiusY, kernel, 1, false
+
+    sigmaColor = threshold / 0xff * Math.sqrt(0xff * 0xff * 3) / BilateralFilter._SIGMA_8BIT
+    @_gaussColorCoeff = -0.5 / (sigmaColor * sigmaColor)
+
+  _runKernel: (pixel, pixels, x, y, width, height) ->
+    center = @_getPixel pixels, x, y, width, height
+    totalWeight = 0
+
+    i = 0
+    for relY in [1 - @_radiusY...@_radiusY] by 1
+      absY = y + relY
+      for relX in [1 - @_radiusX...@_radiusX] by 1
+        absX = x + relX
+        p = @_getPixel pixels, absX, absY, width, height
+        dr = p[0] - center[0]
+        dg = p[1] - center[1]
+        db = p[2] - center[2]
+        weight = @_kernel[i] * Math.exp((dr * dr + dg * dg + db * db) * @_gaussColorCoeff)
+        totalWeight += weight
+        pixel[0] += p[0] * weight
+        pixel[1] += p[1] * weight
+        pixel[2] += p[2] * weight
+        i++
+
+    pixel[0] /= totalWeight
+    pixel[1] /= totalWeight
+    pixel[2] /= totalWeight
 
 
 
@@ -1656,47 +1735,16 @@ class Bitmap extends DisplayObject
 
 #package sc.ript.filter
 
-class BilateralFilter extends KernelFilter
+class BlurFilter extends KernelFilter
 
-  @_SIGMA_8BIT: 2.04045
-
-  constructor: (radiusX = 2, radiusY = 2, threshold = 0x20) ->
-    # generate kernel
+  constructor: (radiusX, radiusY, quality) ->
+    side = radiusX * 2 - 1
+    length = side * side
+    invert = 1 / length
     kernel = []
-    gaussSpaceCoeff = -0.5 / ((radiusX / BilateralFilter._SIGMA_8BIT) * (radiusY / BilateralFilter._SIGMA_8BIT))
-    for relY in [1 - radiusY...radiusY] by 1
-      for relX in [1 - radiusX...radiusX] by 1
-        kernel.push Math.exp((relX * relX + relY * relY) * gaussSpaceCoeff)
-
-    # call super constructor
-    super radiusX, radiusY, kernel
-
-    sigmaColor = threshold / 0xff * Math.sqrt(0xff * 0xff * 3) / BilateralFilter._SIGMA_8BIT
-    @_gaussColorCoeff = -0.5 / (sigmaColor * sigmaColor)
-
-  _runKernel: (pixel, pixels, x, y, width, height) ->
-    center = @_getPixel pixels, x, y, width, height
-    totalWeight = 0
-
-    i = 0
-    for relY in [1 - @_radiusY...@_radiusY] by 1
-      absY = y + relY
-      for relX in [1 - @_radiusX...@_radiusX] by 1
-        absX = x + relX
-        p = @_getPixel pixels, absX, absY, width, height
-        dr = p[0] - center[0]
-        dg = p[1] - center[1]
-        db = p[2] - center[2]
-        weight = @_kernel[i] * Math.exp((dr * dr + dg * dg + db * db) * @_gaussColorCoeff)
-        totalWeight += weight
-        pixel[0] += p[0] * weight
-        pixel[1] += p[1] * weight
-        pixel[2] += p[2] * weight
-        i++
-
-    pixel[0] /= totalWeight
-    pixel[1] /= totalWeight
-    pixel[2] /= totalWeight
+    kernel.push invert while length--
+    console.log radiusX, radiusY, kernel
+    super radiusX, radiusY, kernel, quality, true
 
 
 
@@ -1725,21 +1773,23 @@ window[k] = v for k, v of {
         "NumberUtil": NumberUtil,
         "Type": Type
       },
+      "serializer": {
+        "QueryString": QueryString
+      },
       "filter": {
         "Filter": Filter,
         "ThresholdFilter": ThresholdFilter,
         "KernelFilter": KernelFilter,
-        "BlurFilter": BlurFilter,
-        "BilateralFilter": BilateralFilter
-      },
-      "serializer": {
-        "QueryString": QueryString
+        "GaussianBlurFilter": GaussianBlurFilter,
+        "ColorMatrixFilter": ColorMatrixFilter,
+        "BilateralFilter": BilateralFilter,
+        "BlurFilter": BlurFilter
       },
       "path": path,
       "geom": {
-        "Matrix": Matrix,
+        "Rectangle": Rectangle,
         "Point": Point,
-        "Rectangle": Rectangle
+        "Matrix": Matrix
       },
       "deferred": {
         "DLoader": DLoader
