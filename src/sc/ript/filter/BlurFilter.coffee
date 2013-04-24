@@ -8,5 +8,6 @@ class BlurFilter extends KernelFilter
     invert = 1 / length
     kernel = []
     kernel.push invert while length--
-    super radiusX, radiusY, kernel, quality
+    console.log radiusX, radiusY, kernel
+    super radiusX, radiusY, kernel, quality, true
 

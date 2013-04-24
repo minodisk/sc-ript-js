@@ -13,7 +13,7 @@ class BilateralFilter extends KernelFilter
         kernel.push Math.exp((relX * relX + relY * relY) * gaussSpaceCoeff)
 
     # call super constructor
-    super radiusX, radiusY, kernel
+    super radiusX, radiusY, kernel, 1, false
 
     sigmaColor = threshold / 0xff * Math.sqrt(0xff * 0xff * 3) / BilateralFilter._SIGMA_8BIT
     @_gaussColorCoeff = -0.5 / (sigmaColor * sigmaColor)
