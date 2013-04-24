@@ -13,5 +13,3 @@ class GaussianBlurFilter extends KernelFilter
         kernel.push w
     kernel[i] /= weight for i in [0...kernel.length] by 1
     super radiusX, radiusY, kernel, 1, true
-
-    console.log @_kernel
