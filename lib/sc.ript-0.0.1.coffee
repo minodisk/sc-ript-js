@@ -177,7 +177,7 @@ class EventEmitter
 
 class ByteArray
 
-  @BlobBuilder: window.BlobBuilder or window.WebKitBlobBuilder or window.MozBlobBuilder
+  @BlobBuilder: window.BlobBuilder or window.WebKitBlobBuilder or window.MozBlobBuilder or window.MSBlobBuilder
 
   @fromDataURL: (dataURL) ->
     mimeString = dataURL.split(',')[0].split(':')[1].split(';')[0]
@@ -189,20 +189,15 @@ class ByteArray
       ia[i] = byteString.charCodeAt i
 
     if @BlobBuilder?
-      bb = new ByteArray.BlobBuilder
-      bb.append ab
-      new ByteArray bb.getBlob mimeString
-    else
-      new ByteArray new Blob [ab], type: mimeString
+      bb = new @BlobBuilder
+      bb.append ia.buffer
+      bb.getBlob mimeString
+    else if window.Blob?
+      new Blob [ab], type: mimeString
 
 # for Chrome
-#      new ByteArray new Blob [ia], type: mimeString
+#      new Blob [ia], type: mimeString
 
-
-  constructor: (@data) ->
-
-  length: ->
-    @data.size
 
 
 #package sc.ript.color
@@ -1466,11 +1461,24 @@ class Bitmap extends DisplayObject
   ##############################################################################
 
   encodeAsPNG: ->
-    ByteArray.fromDataURL @canvas.toDataURL 'image/png'
+    ByteArray.fromDataURL @encodeAsBase64PNG()
 
   encodeAsJPG: (quality = 0.8) ->
-    ByteArray.fromDataURL @canvas.toDataURL 'image/jpeg', quality
+    ByteArray.fromDataURL @encodeAsBase64JPG quality
 
+  encodeAsBase64PNG: (onlyData = false) ->
+    data = @canvas.toDataURL 'image/png'
+    if onlyData
+      data.split(',')[1]
+    else
+      data
+
+  encodeAsBase64JPG: (quality = 0.8, onlyData = false) ->
+    data = @canvas.toDataURL 'image/jpeg', quality
+    if onlyData
+      data.split(',')[1]
+    else
+      data
 
   ##############################################################################
   # BitmapData API

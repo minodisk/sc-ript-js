@@ -64,11 +64,24 @@ class Bitmap extends DisplayObject
   ##############################################################################
 
   encodeAsPNG: ->
-    ByteArray.fromDataURL @canvas.toDataURL 'image/png'
+    ByteArray.fromDataURL @encodeAsBase64PNG()
 
   encodeAsJPG: (quality = 0.8) ->
-    ByteArray.fromDataURL @canvas.toDataURL 'image/jpeg', quality
+    ByteArray.fromDataURL @encodeAsBase64JPG quality
 
+  encodeAsBase64PNG: (onlyData = false) ->
+    data = @canvas.toDataURL 'image/png'
+    if onlyData
+      data.split(',')[1]
+    else
+      data
+
+  encodeAsBase64JPG: (quality = 0.8, onlyData = false) ->
+    data = @canvas.toDataURL 'image/jpeg', quality
+    if onlyData
+      data.split(',')[1]
+    else
+      data
 
   ##############################################################################
   # BitmapData API
