@@ -20,15 +20,6 @@ class Color
 
 #package sc.ript.display
 
-class CapsStyle
-
-  @NONE  : 'butt'
-  @BUTT  : 'butt'
-  @ROUND : 'round'
-  @SQUARE: 'square'
-
-#package sc.ript.display
-
 class DisplayObject
 
   @_RADIAN_PER_DEGREE: Math.PI / 180
@@ -70,35 +61,12 @@ class JointStyle
 
 #package sc.ript.display
 
-class BlendMode
+class CapsStyle
 
-  @NORMAL: 'normal'
-  @BLEND: 'blend'
-  @ADD: 'add'
-  @SUBTRACT: 'subtract'
-  @DARKEST: 'darkest'
-  @LIGHTEST: 'lightest'
-  @DIFFERENCE: 'difference'
-  @EXCLUSION: 'exclusion'
-  @MULTIPLY: 'multiply'
-  @SCREEN: 'screen'
-
-  @OVERLAY: 'overlay'
-  @SOFT_LIGHT: 'softLight'
-  @HARD_LIGHT: 'hardLight'
-  @VIVID_LIGHT: 'vividLight'
-  @LINEAR_LIGHT: 'linearLight'
-  @PIN_LIGHT: 'pinLight'
-  @HARD_MIX: 'hardMix'
-
-  @DODGE: 'dodge'
-  @BURN: 'burn'
-  @LINEAR_DODGE: 'linearDodge'
-  @LINEAR_BURN: 'linearBurn'
-
-  @PUNCH: 'punch'
-  @MASK: 'mask'
-
+  @NONE  : 'butt'
+  @BUTT  : 'butt'
+  @ROUND : 'round'
+  @SQUARE: 'square'
 
 #package sc.ript.event
 
@@ -172,6 +140,41 @@ class EventEmitter
         , 0
 
     @
+
+#package sc.ript.utils
+
+class NumberUtil
+
+  @RADIAN_PER_DEGREE: Math.PI / 180
+  @DEGREE_PER_RADIAN: 180 / Math.PI
+  @KB               : 1024
+  @MB               : @KB * @KB
+  @GB               : @MB * @KB
+  @TB               : @GB * @KB
+
+  @degree: (radian) ->
+    radian * @DEGREE_PER_RADIAN
+
+  @radian: (degree) ->
+    degree * @RADIAN_PER_DEGREE
+
+  @signify: (value, digit) ->
+    base = Math.pow 10, digit
+    (value * base >> 0) / base
+
+  @kb: (bytes) ->
+    bytes / @KB
+
+  @mb: (bytes) ->
+    bytes / @MB
+
+  @gb: (bytes) ->
+    bytes / @GB
+
+  @random: (a, b) ->
+    a + (b - a) * Math.random()
+
+
 
 #package sc.ript.utils
 
@@ -272,17 +275,6 @@ class HSV
 
 
 
-#package sc.ript.serializer
-
-class QueryString
-
-  @stringify: (obj, sep = '&', eq = '=') ->
-    kvs = []
-    for key, val of obj
-      kvs.push "#{key}#{eq}#{val}"
-    kvs.join sep
-
-
 #package sc.ript.filter
 
 class Filter
@@ -321,6 +313,49 @@ class Filter
     y = if y < 0 then 0 else if y > height - 1 then height - 1 else y
     pixels[y][x]
 
+
+
+#package sc.ript.display
+
+class BlendMode
+
+  @NORMAL: 'normal'
+  @BLEND: 'blend'
+  @ADD: 'add'
+  @SUBTRACT: 'subtract'
+  @DARKEST: 'darkest'
+  @LIGHTEST: 'lightest'
+  @DIFFERENCE: 'difference'
+  @EXCLUSION: 'exclusion'
+  @MULTIPLY: 'multiply'
+  @SCREEN: 'screen'
+
+  @OVERLAY: 'overlay'
+  @SOFT_LIGHT: 'softLight'
+  @HARD_LIGHT: 'hardLight'
+  @VIVID_LIGHT: 'vividLight'
+  @LINEAR_LIGHT: 'linearLight'
+  @PIN_LIGHT: 'pinLight'
+  @HARD_MIX: 'hardMix'
+
+  @DODGE: 'dodge'
+  @BURN: 'burn'
+  @LINEAR_DODGE: 'linearDodge'
+  @LINEAR_BURN: 'linearBurn'
+
+  @PUNCH: 'punch'
+  @MASK: 'mask'
+
+
+#package sc.ript.serializer
+
+class QueryString
+
+  @stringify: (obj, sep = '&', eq = '=') ->
+    kvs = []
+    for key, val of obj
+      kvs.push "#{key}#{eq}#{val}"
+    kvs.join sep
 
 
 #package tc.ript.display
@@ -562,21 +597,41 @@ class Blend
       da + sa
     ]
 
-  @punch: (dr, dg, db, da, sr, sg, sb, sa) ->
-    [
-      dr
-      dg
-      db
-      da * Blend._peg(0xff - sa) / 0xff
-    ]
+  @punch:  do ->
+    if /Android/.test navigator.userAgent
+      (dr, dg, db, da, sr, sg, sb, sa) ->
+        [
+          dr
+          dg
+          db
+          if (da * Blend._peg(0xff - sa) / 0xff >> 0) > 0xf0 then 0xff else 0
+        ]
+    else
+      (dr, dg, db, da, sr, sg, sb, sa) ->
+        [
+          dr
+          dg
+          db
+          da * Blend._peg(0xff - sa) / 0xff >> 0
+        ]
 
-  @mask: (dr, dg, db, da, sr, sg, sb, sa) ->
-    [
-      dr
-      dg
-      db
-      da * sa / 0xff
-    ]
+  @mask: do ->
+    if /Android/.test navigator.userAgent
+      return (dr, dg, db, da, sr, sg, sb, sa) ->
+        [
+          dr
+          dg
+          db
+          if da * sa / 0xff  > 0xf0 then 0xff else 0
+        ]
+    else
+      return (dr, dg, db, da, sr, sg, sb, sa) ->
+        [
+          dr
+          dg
+          db
+          da * sa / 0xff >> 0
+        ]
 
 
 
@@ -607,38 +662,7 @@ class path
 
 
 
-#package sc.ript.utils
-
-class NumberUtil
-
-  @RADIAN_PER_DEGREE: Math.PI / 180
-  @DEGREE_PER_RADIAN: 180 / Math.PI
-  @KB               : 1024
-  @MB               : @KB * @KB
-  @GB               : @MB * @KB
-  @TB               : @GB * @KB
-
-  @degree: (radian) ->
-    radian * @DEGREE_PER_RADIAN
-
-  @radian: (degree) ->
-    degree * @RADIAN_PER_DEGREE
-
-  @signify: (value, digit) ->
-    base = Math.pow 10, digit
-    (value * base >> 0) / base
-
-  @kb: (bytes) ->
-    bytes / @KB
-
-  @mb: (bytes) ->
-    bytes / @MB
-
-  @gb: (bytes) ->
-    bytes / @GB
-
-  @random: (a, b) ->
-    a + (b - a) * Math.random()
+class StringUtil
 
 
 
@@ -872,6 +896,83 @@ class DLoader
 
 #package sc.ript.geom
 
+class Matrix
+
+  constructor: (@m11 = 1, @m12 = 0, @m21 = 0, @m22 = 1, @tx = 0, @ty = 0) ->
+
+  translate  : (x = 0, y = 0) ->
+    @concat new Matrix 1, 0, 0, 1, x, y
+    @
+
+  scale: (x = 1, y = 1) ->
+    @concat new Matrix x, 0, 0, y, 0, 0
+    @
+
+  rotate: (theta) ->
+    s = Math.sin theta
+    c = Math.cos theta
+    @concat new Matrix c, s, -s, c, 0, 0
+    @
+
+  concat: (matrix) ->
+    { m11, m12, m21, m22, tx, ty } = @
+    @m11 = m11 * matrix.m11 + m12 * matrix.m21
+    @m12 = m11 * matrix.m12 + m12 * matrix.m22
+    @m21 = m21 * matrix.m11 + m22 * matrix.m21
+    @m22 = m21 * matrix.m12 + m22 * matrix.m22
+    @tx = tx * matrix.m11 + ty * matrix.m21 + matrix.tx
+    @ty = tx * matrix.m12 + ty * matrix.m22 + matrix.ty
+    @
+
+  invert: ->
+    { m11, m12, m21, m22, tx, ty } = @
+    d = m11 * m22 - m12 * m21
+    @m11 = m22 / d
+    @m12 = -m12 / d
+    @m21 = -m21 / d
+    @m22 = m11 / d
+    @m41 = (m21 * ty - m22 * tx) / d
+    @m42 = (m12 * tx - m11 * ty) / d
+    @
+
+
+#package sc.ript.color
+
+class RGB
+
+  @average: (rgbs...) ->
+    r = g = b = 0
+    for rgb in rgbs
+      r += rgb.r
+      g += rgb.g
+      b += rgb.b
+    length = rgbs.length
+    r /= length
+    g /= length
+    b /= length
+    new RGB r, g, b
+
+
+  constructor: (@r, @g, @b) ->
+    if arguments.length is 1
+      hex = r
+      @r = hex >> 16 & 0xff
+      @g = hex >> 8 & 0xff
+      @b = hex & 0xff
+    @normalize()
+
+  normalize: ->
+    @r &= 0xff
+    @g &= 0xff
+    @b &= 0xff
+
+  toHex: ->
+    @r << 16 | @g << 8 | @b
+
+
+
+#package sc.ript.geom
+
 class Point
 
   @equals: (pt0, pt1) ->
@@ -933,83 +1034,6 @@ class Point
   divide: (value) ->
     new Point @x / value, @y / value
 
-
-
-#package sc.ript.color
-
-class RGB
-
-  @average: (rgbs...) ->
-    r = g = b = 0
-    for rgb in rgbs
-      r += rgb.r
-      g += rgb.g
-      b += rgb.b
-    length = rgbs.length
-    r /= length
-    g /= length
-    b /= length
-    new RGB r, g, b
-
-
-  constructor: (@r, @g, @b) ->
-    if arguments.length is 1
-      hex = r
-      @r = hex >> 16 & 0xff
-      @g = hex >> 8 & 0xff
-      @b = hex & 0xff
-    @normalize()
-
-  normalize: ->
-    @r &= 0xff
-    @g &= 0xff
-    @b &= 0xff
-
-  toHex: ->
-    @r << 16 | @g << 8 | @b
-
-
-
-#package sc.ript.geom
-
-class Matrix
-
-  constructor: (@m11 = 1, @m12 = 0, @m21 = 0, @m22 = 1, @tx = 0, @ty = 0) ->
-
-  translate  : (x = 0, y = 0) ->
-    @concat new Matrix 1, 0, 0, 1, x, y
-    @
-
-  scale: (x = 1, y = 1) ->
-    @concat new Matrix x, 0, 0, y, 0, 0
-    @
-
-  rotate: (theta) ->
-    s = Math.sin theta
-    c = Math.cos theta
-    @concat new Matrix c, s, -s, c, 0, 0
-    @
-
-  concat: (matrix) ->
-    { m11, m12, m21, m22, tx, ty } = @
-    @m11 = m11 * matrix.m11 + m12 * matrix.m21
-    @m12 = m11 * matrix.m12 + m12 * matrix.m22
-    @m21 = m21 * matrix.m11 + m22 * matrix.m21
-    @m22 = m21 * matrix.m12 + m22 * matrix.m22
-    @tx = tx * matrix.m11 + ty * matrix.m21 + matrix.tx
-    @ty = tx * matrix.m12 + ty * matrix.m22 + matrix.ty
-    @
-
-  invert: ->
-    { m11, m12, m21, m22, tx, ty } = @
-    d = m11 * m22 - m12 * m21
-    @m11 = m22 / d
-    @m12 = -m12 / d
-    @m21 = -m21 / d
-    @m22 = m11 / d
-    @m41 = (m21 * ty - m22 * tx) / d
-    @m42 = (m12 * tx - m11 * ty) / d
-    @
 
 
 #package sc.ript.event
@@ -1169,30 +1193,6 @@ class GaussianBlurFilter extends KernelFilter
     kernel[i] /= weight for i in [0...kernel.length] by 1
     super radiusX, radiusY, kernel, 1, true
 
-#package sc.ript.filter
-
-
-# |R|   |m0  m1  m2  m3 ||r|   |m4 |
-# |G| = |m5  m6  m7  m8 ||g| + |m9 |
-# |B|   |m10 m11 m12 m13||b|   |m14|
-# |A|   |m15 m16 m17 m18||a|   |m19|
-class ColorMatrixFilter extends Filter
-
-  constructor: (@matrix) ->
-    super()
-
-  _evaluatePixel: (pixels, x, y, width, height) ->
-    m = @matrix
-    [r, g, b, a] = pixels[y][x]
-    [
-      r * m[0] + g * m[1] + b * m[2] + a * m[3] + m[4]
-      r * m[5] + g * m[6] + b * m[7] + a * m[8] + m[9]
-      r * m[10] + g * m[11] + b * m[12] + a * m[13] + m[14]
-      r * m[15] + g * m[16] + b * m[17] + a * m[18] + m[19]
-    ]
-
-
-
 #package sc.ript.ui
 
 
@@ -1346,6 +1346,21 @@ class Button extends EventEmitter
   _onClick: (e) =>
     return unless @_enabled
     @emit e if e
+
+
+
+#package sc.ript.filter
+
+class BlurFilter extends KernelFilter
+
+  constructor: (radiusX, radiusY, quality) ->
+    side = radiusX * 2 - 1
+    length = side * side
+    invert = 1 / length
+    kernel = []
+    kernel.push invert while length--
+    console.log radiusX, radiusY, kernel
+    super radiusX, radiusY, kernel, quality, true
 
 
 
@@ -1747,16 +1762,25 @@ class Bitmap extends DisplayObject
 
 #package sc.ript.filter
 
-class BlurFilter extends KernelFilter
 
-  constructor: (radiusX, radiusY, quality) ->
-    side = radiusX * 2 - 1
-    length = side * side
-    invert = 1 / length
-    kernel = []
-    kernel.push invert while length--
-    console.log radiusX, radiusY, kernel
-    super radiusX, radiusY, kernel, quality, true
+# |R|   |m0  m1  m2  m3 ||r|   |m4 |
+# |G| = |m5  m6  m7  m8 ||g| + |m9 |
+# |B|   |m10 m11 m12 m13||b|   |m14|
+# |A|   |m15 m16 m17 m18||a|   |m19|
+class ColorMatrixFilter extends Filter
+
+  constructor: (@matrix) ->
+    super()
+
+  _evaluatePixel: (pixels, x, y, width, height) ->
+    m = @matrix
+    [r, g, b, a] = pixels[y][x]
+    [
+      r * m[0] + g * m[1] + b * m[2] + a * m[3] + m[4]
+      r * m[5] + g * m[6] + b * m[7] + a * m[8] + m[9]
+      r * m[10] + g * m[11] + b * m[12] + a * m[13] + m[14]
+      r * m[15] + g * m[16] + b * m[17] + a * m[18] + m[19]
+    ]
 
 
 
@@ -1769,10 +1793,10 @@ window[k] = v for k, v of {
         "RGB": RGB
       },
       "display": {
-        "CapsStyle": CapsStyle,
         "DisplayObject": DisplayObject,
         "GraphicsPathCommand": GraphicsPathCommand,
         "JointStyle": JointStyle,
+        "CapsStyle": CapsStyle,
         "BlendMode": BlendMode,
         "Bitmap": Bitmap
       },
@@ -1781,27 +1805,28 @@ window[k] = v for k, v of {
         "Event": Event
       },
       "utils": {
-        "ByteArray": ByteArray,
         "NumberUtil": NumberUtil,
+        "ByteArray": ByteArray,
+        "StringUtil": StringUtil,
         "Type": Type
-      },
-      "serializer": {
-        "QueryString": QueryString
       },
       "filter": {
         "Filter": Filter,
         "ThresholdFilter": ThresholdFilter,
         "KernelFilter": KernelFilter,
         "GaussianBlurFilter": GaussianBlurFilter,
-        "ColorMatrixFilter": ColorMatrixFilter,
+        "BlurFilter": BlurFilter,
         "BilateralFilter": BilateralFilter,
-        "BlurFilter": BlurFilter
+        "ColorMatrixFilter": ColorMatrixFilter
+      },
+      "serializer": {
+        "QueryString": QueryString
       },
       "path": path,
       "geom": {
         "Rectangle": Rectangle,
-        "Point": Point,
-        "Matrix": Matrix
+        "Matrix": Matrix,
+        "Point": Point
       },
       "deferred": {
         "DLoader": DLoader
