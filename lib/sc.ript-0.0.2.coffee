@@ -1798,6 +1798,7 @@ window[k] = v for k, v of {
         "JointStyle": JointStyle,
         "CapsStyle": CapsStyle,
         "BlendMode": BlendMode,
+        "Blend": Blend,
         "Bitmap": Bitmap
       },
       "event": {
@@ -1833,13 +1834,6 @@ window[k] = v for k, v of {
       },
       "ui": {
         "Button": Button
-      }
-    }
-  },
-  "tc": {
-    "ript": {
-      "display": {
-        "Blend": Blend
       }
     }
   }
