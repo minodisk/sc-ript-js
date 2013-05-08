@@ -597,16 +597,16 @@ class Blend
       da + sa
     ]
 
-  @punch:  do ->
-    if /Android/.test navigator.userAgent
-      (dr, dg, db, da, sr, sg, sb, sa) ->
-        [
-          dr
-          dg
-          db
-          if (da * Blend._peg(0xff - sa) / 0xff >> 0) > 0xf0 then 0xff else 0
-        ]
-    else
+  @punch: #do ->
+#    if /Android/.test navigator.userAgent
+#      (dr, dg, db, da, sr, sg, sb, sa) ->
+#        [
+#          dr
+#          dg
+#          db
+#          if (da * Blend._peg(0xff - sa) / 0xff >> 0) > 0xf0 then 0xff else 0
+#        ]
+#    else
       (dr, dg, db, da, sr, sg, sb, sa) ->
         [
           dr
@@ -615,17 +615,17 @@ class Blend
           da * Blend._peg(0xff - sa) / 0xff >> 0
         ]
 
-  @mask: do ->
-    if /Android/.test navigator.userAgent
-      return (dr, dg, db, da, sr, sg, sb, sa) ->
-        [
-          dr
-          dg
-          db
-          if da * sa / 0xff  > 0xf0 then 0xff else 0
-        ]
-    else
-      return (dr, dg, db, da, sr, sg, sb, sa) ->
+  @mask: #do ->
+#    if /Android/.test navigator.userAgent
+#      (dr, dg, db, da, sr, sg, sb, sa) ->
+#        [
+#          dr
+#          dg
+#          db
+#          if da * sa / 0xff  > 0xf0 then 0xff else 0
+#        ]
+#    else
+      (dr, dg, db, da, sr, sg, sb, sa) ->
         [
           dr
           dg
