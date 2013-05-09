@@ -8,12 +8,12 @@ class QueryString
       kvs.push "#{key}#{eq}#{val}"
     kvs.join sep
 
-  @parse: (str, sep = '&', eq = '=', {maxKeys}) ->
+  @parse: (str, sep = '&', eq = '=', {maxKeys} = {}) ->
     maxKeys = 1000 unless maxKeys?
     obj = {}
     for kv, i in str.split sep
       break if maxKeys isnt 0 and i > maxKeys
-      [k, v] = kv.split sep
+      [k, v] = kv.split eq
       if obj[k]?
         if Type.isArray obj[k]
           obj[k].push v
