@@ -1,6 +1,3 @@
-#package sc.ript.ui
-
-
 class Button extends EventEmitter
 
   @FULL:

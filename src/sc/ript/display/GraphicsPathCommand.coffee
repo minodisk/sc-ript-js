@@ -1,5 +1,3 @@
-#package sc.ript.display
-
 class GraphicsPathCommand
 
   @NO_OP         : 0

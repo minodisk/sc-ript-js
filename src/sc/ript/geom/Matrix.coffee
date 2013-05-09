@@ -1,5 +1,3 @@
-#package sc.ript.geom
-
 class Matrix
 
   constructor: (@m11 = 1, @m12 = 0, @m21 = 0, @m22 = 1, @tx = 0, @ty = 0) ->

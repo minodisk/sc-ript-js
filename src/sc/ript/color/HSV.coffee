@@ -1,5 +1,3 @@
-#package sc.ript.color
-
 class HSV
 
   constructor: (@h, @s, @v) ->

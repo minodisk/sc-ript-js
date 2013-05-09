@@ -1,5 +1,3 @@
-#package sc.ript.geom
-
 class Point
 
   @equals: (pt0, pt1) ->

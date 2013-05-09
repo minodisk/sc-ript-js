@@ -1,5 +1,3 @@
-#package sc.ript.utils
-
 class ByteArray
 
   @BlobBuilder: window.BlobBuilder or window.WebKitBlobBuilder or window.MozBlobBuilder or window.MSBlobBuilder

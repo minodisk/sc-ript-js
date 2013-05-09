@@ -1,5 +1,3 @@
-#package sc.ript.display
-
 class Bitmap extends DisplayObject
 
   @_PI_2                       : Math.PI * 2

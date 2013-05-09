@@ -1,6 +1,4 @@
-#package sc.ript.filter
-
-class ThresholdFilter extends Filter
+class ThresholdFilter extends sc.ript.filter.Filter
 
   # @param operation "<", "<=", ">", ">=", "==", "!="
   constructor: (@threshold, @operation) ->

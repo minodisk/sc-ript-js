@@ -1,6 +1,3 @@
-#package sc.ript.deferred
-
-
 class DLoader
 
   @loadData: (url, method = 'get', data = '') ->

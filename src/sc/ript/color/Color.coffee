@@ -1,5 +1,3 @@
-#package sc.ript.color
-
 class Color
 
   @toCSSString: (color, alpha = 1) ->

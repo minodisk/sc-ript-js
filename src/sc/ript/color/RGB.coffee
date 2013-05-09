@@ -1,5 +1,3 @@
-#package sc.ript.color
-
 class RGB
 
   @average: (rgbs...) ->

@@ -1,6 +1,4 @@
-#package sc.ript.filter
-
-class KernelFilter extends Filter
+class KernelFilter extends sc.ript.filter.Filter
 
   constructor: (radiusX, radiusY, kernel, quality, applyAlpha) ->
     super quality

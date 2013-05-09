@@ -1,5 +1,3 @@
-#package sc.ript.utils
-
 class NumberUtil
 
   @RADIAN_PER_DEGREE: Math.PI / 180

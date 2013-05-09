@@ -1,5 +1,3 @@
-#package tc.ript.display
-
 class Blend
 
   @_mix: (a, b, f) ->

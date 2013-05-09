@@ -1,6 +1,3 @@
-#package sc.ript.geom
-
-
 class Rectangle
 
   # ## new Rectangle(x:*Number* = 0, y:*Number* = 0, width:*Number* = 0, height:*Number* = 0)

@@ -1,6 +1,4 @@
-#package sc.ript.filter
-
-class GaussianBlurFilter extends KernelFilter
+class GaussianBlurFilter extends sc.ript.filter.KernelFilter
 
   constructor: (radiusX, radiusY, sigma = 0.84089642) ->
     s = 2 * sigma * sigma

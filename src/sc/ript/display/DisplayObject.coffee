@@ -1,5 +1,3 @@
-#package sc.ript.display
-
 class DisplayObject
 
   @_RADIAN_PER_DEGREE: Math.PI / 180

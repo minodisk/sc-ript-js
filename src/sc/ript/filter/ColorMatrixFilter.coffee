@@ -1,11 +1,8 @@
-#package sc.ript.filter
-
-
 # |R|   |m0  m1  m2  m3 ||r|   |m4 |
 # |G| = |m5  m6  m7  m8 ||g| + |m9 |
 # |B|   |m10 m11 m12 m13||b|   |m14|
 # |A|   |m15 m16 m17 m18||a|   |m19|
-class ColorMatrixFilter extends Filter
+class ColorMatrixFilter extends sc.ript.filter.Filter
 
   constructor: (@matrix) ->
     super()

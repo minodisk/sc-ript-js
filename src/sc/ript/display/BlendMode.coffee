@@ -1,5 +1,3 @@
-#package sc.ript.display
-
 class BlendMode
 
   @NORMAL: 'normal'

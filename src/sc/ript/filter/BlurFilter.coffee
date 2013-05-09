@@ -1,6 +1,4 @@
-#package sc.ript.filter
-
-class BlurFilter extends KernelFilter
+class BlurFilter extends sc.ript.filter.KernelFilter
 
   constructor: (radiusX, radiusY, quality) ->
     side = radiusX * 2 - 1

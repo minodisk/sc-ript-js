@@ -1,5 +1,3 @@
-#package sc.ript.filter
-
 class Filter
 
   constructor: (@quality = 1) ->

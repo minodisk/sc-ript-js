@@ -1,6 +1,4 @@
-#package sc.ript.filter
-
-class BilateralFilter extends KernelFilter
+class BilateralFilter extends sc.ript.filter.KernelFilter
 
   @_SIGMA_8BIT: 2.04045
 
