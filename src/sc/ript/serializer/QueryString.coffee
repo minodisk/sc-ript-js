@@ -1,4 +1,4 @@
-{Type} = sc.ript.utils
+{Type} = sc.ript.util
 
 class QueryString
 

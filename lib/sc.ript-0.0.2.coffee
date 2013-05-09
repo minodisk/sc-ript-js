@@ -3,7 +3,7 @@
     "color": {},
     "display": {},
     "event": {},
-    "utils": {},
+    "util": {},
     "filter": {},
     "serializer": {},
     "geom": {},
@@ -154,7 +154,7 @@
   
       @
 
-@sc.ript.utils.NumberUtil = do ->
+@sc.ript.util.NumberUtil = do ->
 
   class NumberUtil
   
@@ -189,7 +189,7 @@
   
   
 
-@sc.ript.utils.ByteArray = do ->
+@sc.ript.util.ByteArray = do ->
 
   class ByteArray
   
@@ -362,7 +362,7 @@
 
 @sc.ript.serializer.QueryString = do ->
 
-  {Type} = sc.ript.utils
+  {Type} = sc.ript.util
   
   class QueryString
   
@@ -697,7 +697,7 @@
   
   
 
-@sc.ript.utils.StringUtil = do ->
+@sc.ript.util.StringUtil = do ->
 
   class StringUtil
   
@@ -1078,7 +1078,7 @@
     constructor: (@type, @data) ->
   
 
-@sc.ript.utils.Type = do ->
+@sc.ript.util.Type = do ->
 
   class Type
   
