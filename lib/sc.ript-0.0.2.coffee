@@ -1231,7 +1231,7 @@
 
 @sc.ript.ui.Button = do ->
 
-  class Button extends EventEmitter
+  class Button extends sc.ript.event.EventEmitter
   
     @FULL:
       out     : '_out'
@@ -1447,7 +1447,7 @@
 
 @sc.ript.display.Bitmap = do ->
 
-  class Bitmap extends DisplayObject
+  class Bitmap extends sc.ript.display.DisplayObject
   
     @_PI_2                       : Math.PI * 2
     @_PI_OVER_2                  : Math.PI / 2

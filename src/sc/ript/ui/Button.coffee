@@ -1,4 +1,4 @@
-class Button extends EventEmitter
+class Button extends sc.ript.event.EventEmitter
 
   @FULL:
     out     : '_out'
