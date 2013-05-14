@@ -1,4 +1,4 @@
-class GraphicsPathCommand
+class sc.ript.display.GraphicsPathCommand
 
   @NO_OP         : 0
   @MOVE_TO       : 1

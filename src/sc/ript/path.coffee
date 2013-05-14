@@ -1,6 +1,4 @@
-#package sc.ript
-
-class path
+class sc.ript.path
 
   @join: (pathes...) ->
     pathes = pathes.join('/').replace(/\/{2,}/g, '/').split('/');

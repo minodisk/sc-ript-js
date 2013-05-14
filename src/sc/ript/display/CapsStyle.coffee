@@ -1,4 +1,4 @@
-class CapsStyle
+class sc.ript.display.CapsStyle
 
   @NONE  : 'butt'
   @BUTT  : 'butt'

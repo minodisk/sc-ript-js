@@ -1,4 +1,4 @@
-class Rectangle
+class sc.ript.geom.Rectangle
 
   # ## new Rectangle(x:*Number* = 0, y:*Number* = 0, width:*Number* = 0, height:*Number* = 0)
   # Creates a new *Rectangle* instance.

@@ -1,4 +1,4 @@
-class Point
+class sc.ript.geom.Point
 
   @equals: (pt0, pt1) ->
     pt0.equals pt1

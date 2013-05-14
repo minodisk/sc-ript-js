@@ -1,4 +1,4 @@
-class EventEmitter
+class sc.ript.event.EventEmitter
 
   constructor: ->
     @_receivers = {}

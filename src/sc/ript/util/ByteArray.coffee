@@ -1,4 +1,4 @@
-class ByteArray
+class sc.ript.util.ByteArray
 
   @BlobBuilder: window.BlobBuilder or window.WebKitBlobBuilder or window.MozBlobBuilder or window.MSBlobBuilder
 

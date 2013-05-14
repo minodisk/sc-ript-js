@@ -1,4 +1,4 @@
-class Color
+class sc.ript.color.Color
 
   @toCSSString: (color, alpha = 1) ->
     r = color >> 16 & 0xff

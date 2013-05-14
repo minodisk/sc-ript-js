@@ -1,4 +1,4 @@
-class DLoader
+class sc.ript.deferred.DLoader
 
   @loadData: (url, method = 'get', data = '') ->
     d = new Deferred

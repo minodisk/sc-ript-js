@@ -1,4 +1,4 @@
-class RGB
+class sc.ript.color.RGB
 
   @average: (rgbs...) ->
     r = g = b = 0

@@ -1,4 +1,4 @@
-class BlurFilter extends sc.ript.filter.KernelFilter
+class sc.ript.filter.BlurFilter extends sc.ript.filter.KernelFilter
 
   constructor: (radiusX, radiusY, quality) ->
     side = radiusX * 2 - 1

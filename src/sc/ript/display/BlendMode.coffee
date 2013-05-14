@@ -1,4 +1,4 @@
-class BlendMode
+class sc.ript.display.BlendMode
 
   @NORMAL: 'normal'
   @BLEND: 'blend'

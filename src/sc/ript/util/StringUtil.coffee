@@ -1,2 +1,2 @@
-class StringUtil
+class sc.ript.util.StringUtil
 

@@ -1,4 +1,4 @@
-class HSV
+class sc.ript.color.HSV
 
   constructor: (@h, @s, @v) ->
     if arguments.length is 1

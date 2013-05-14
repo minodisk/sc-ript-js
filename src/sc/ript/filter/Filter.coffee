@@ -1,4 +1,4 @@
-class Filter
+class sc.ript.filter.Filter
 
   constructor: (@quality = 1) ->
 

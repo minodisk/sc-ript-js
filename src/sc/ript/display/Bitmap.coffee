@@ -1,4 +1,4 @@
-class Bitmap extends sc.ript.display.DisplayObject
+class sc.ript.display.Bitmap extends sc.ript.display.DisplayObject
 
   @_PI_2                       : Math.PI * 2
   @_PI_OVER_2                  : Math.PI / 2

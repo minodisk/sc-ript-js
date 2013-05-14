@@ -1,4 +1,4 @@
-class Blend
+class sc.ript.display.Blend
 
   @_mix: (a, b, f) ->
     a + (((b - a) * f) >> 8)

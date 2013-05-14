@@ -1,6 +1,6 @@
-{Type} = sc.ript.util
+class sc.ript.serializer.QueryString
 
-class QueryString
+  {Type} = sc.ript.util
 
   @stringify: (obj, sep = '&', eq = '=') ->
     kvs = []

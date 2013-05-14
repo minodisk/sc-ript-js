@@ -1,4 +1,4 @@
-class NumberUtil
+class sc.ript.util.NumberUtil
 
   @RADIAN_PER_DEGREE: Math.PI / 180
   @DEGREE_PER_RADIAN: 180 / Math.PI

@@ -1,4 +1,4 @@
-class Type
+class sc.ript.util.Type
 
   @toString      : Object.prototype.toString
   @hasOwnProperty: Object.prototype.hasOwnProperty
