@@ -8,6 +8,7 @@ sc = {
     "serializer": {},
     "geom": {},
     "deferred": {},
+    "jquery": {},
     "ui": {}
   }
 }
@@ -1038,44 +1039,43 @@ class sc.ript.event.Event
 
 class sc.ript.util.Type
 
-  @toString      : Object.prototype.toString
-  @hasOwnProperty: Object.prototype.hasOwnProperty
+  { toString, hasOwnProperty } = Object.prototype
 
   @isElement: (value) ->
     value?.nodeType is 1
 
   @isArray: Array.isArray or (value) ->
-    @toString.call(value) is '[object Array]'
+    toString.call(value) is '[object Array]'
 
   @isArguments: do ->
     isArguments = (value) ->
-      @toString.call(value) is "[object Arguments]"
+      toString.call(value) is "[object Arguments]"
     if isArguments arguments
       isArguments
     else
       (value) ->
-        value? and @hasOwnProperty.call(value, 'callee')
+        value? and hasOwnProperty.call(value, 'callee')
 
 
   @isFunction: do ->
     if typeof /./ is 'function'
       (value) ->
-        @toString.call(value) is "[object Function]"
+        toString.call(value) is "[object Function]"
     else
       (value) ->
         typeob value is 'function'
 
   @isString: (value) ->
-    @toString.call(value) is "[object String]"
+    toString.call(value) is "[object String]"
 
   @isNumber: (value) ->
-    @toString.call(value) is "[object Number]"
+    toString.call(value) is "[object Number]"
 
   @isDate: (value) ->
-    @toString.call(value) is "[object Date]"
+    toString.call(value) is "[object Date]"
 
   @isRegExp: (value) ->
-    @toString.call(value) is "[object RegExp]"
+    toString.call(value) is "[object RegExp]"
 
   @isFinite: (value) ->
     isFinite(value) and not isNaN(parseFloat(value))
@@ -1084,7 +1084,7 @@ class sc.ript.util.Type
     @isNumber(value) and value isnt +value
 
   @isBoolean: (value) ->
-    value is true or value is false or @toString.call(value) is "[object Boolean]"
+    value is true or value is false or toString.call(value) is "[object Boolean]"
 
   @isNull: (value) ->
     value is null
@@ -1122,6 +1122,59 @@ class sc.ript.filter.ThresholdFilter extends sc.ript.filter.Filter
         color = if color != @threshold then color else 0
     [color >> 16 & 0xff, color >> 8 & 0xff, color & 0xff, color >> 24 & 0xff]
 
+
+
+
+
+class sc.ript.jquery.Preloader extends sc.ript.event.EventEmitter
+
+  { Event } = sc.ript.event
+  { Type } = sc.ript.util
+
+
+  constructor: ->
+    super()
+    @urls = []
+
+  addElement: (el) ->
+    for e in $ el
+      @urls.push.apply @urls, @_findURLs e
+    @
+
+  addURL: (url) ->
+    @urls.push url
+    @
+
+  load: ->
+    total = @urls.length
+    loaded = 0
+    for url in @urls
+      $('<img>')
+        .attr('src', url)
+        .on 'load error', =>
+          @emit new Event 'progress',
+            loaded: ++loaded
+            total : total
+          if loaded is total
+            @emit new Event 'complete'
+    @
+
+
+  _findURLs: (el) ->
+    urls = []
+    @_findURL el, urls
+    for el in $(el).find('*')
+      @_findURL el, urls
+    urls
+
+  _findURL: (el, urls) ->
+    if el.nodeName is 'IMG' and (url = $(el).attr('src'))?
+      urls.push url
+    if (url = $(el).css('background-image')) isnt 'none'
+      [ {},
+        url ] = url.match /url\((.*)\)/
+      if url?
+        urls.push url
 
 
 
