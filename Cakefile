@@ -1,13 +1,14 @@
-{spawn} = require 'child_process'
+{ spawn } = require 'child_process'
 
-task 'compile', 'compile with coffeemill', (options) ->
+option '-o', '--output [filename]', 'Additional output path'
+
+task 'compile', 'compile with coffeemill', ({output}) ->
+  outputs = [ 'lib' ]
+  outputs.push output if output?
   spawn '../coffeemill/bin/coffeemill', [
     '-n', 'sc.ript'
     '-v', 'gitTag'
-    '-o', ['lib','../jquery-tm/src'].join(',')
+    '-o', outputs.join(',')
     '-wm'
   ],
     stdio: 'inherit'
-
-
-invoke 'compile'
