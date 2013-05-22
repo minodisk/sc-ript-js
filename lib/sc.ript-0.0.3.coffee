@@ -1536,6 +1536,12 @@ class sc.ript.util.NumberUtil
   @random: (a, b) ->
     a + (b - a) * Math.random()
 
+  @toSplit3String: (value) ->
+    value = "#{value}"
+    while value isnt (tmp = value.replace /^([+-]?\d+)(\d\d\d)/, '$1,$2')
+      value = tmp
+    value
+
 
 
 class sc.ript.util.StringUtil
