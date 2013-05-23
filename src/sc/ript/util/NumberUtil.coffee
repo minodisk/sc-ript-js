@@ -37,6 +37,9 @@ class sc.ript.util.NumberUtil
 
   @digitAt: (num, digit) ->
     str = "#{num}"
-    return 0 if digit > str.length
-    +str.substr -digit, 1
+    return 0 if digit < 0 or digit >= str.length
+    +str.substr -(digit + 1), 1
+
+  @digits: (num) ->
+    "#{num}".length
 
