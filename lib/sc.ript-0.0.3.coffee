@@ -1507,17 +1507,17 @@ class sc.ript.util.ByteArray
 
 class sc.ript.util.Iterator
 
-  @count: (len, callback, step = 1) ->
+  @count: (len, callback, step = 1, context) ->
     return if step is 0 or len <= 0
     if step > 0
       i = 0
       while i < len
-        return if callback(i) is false
+        return if callback.call(context, i) is false
         i += step
     else
       i = len
       while (i += step) >= 0
-        return if callback(i) is false
+        return if callback.call(context, i) is false
         
 
 
@@ -1570,6 +1570,18 @@ class sc.ript.util.NumberUtil
 
 
 class sc.ript.util.StringUtil
+
+  @padLeft: (str, len, pad) ->
+    str = '' + str
+    while str.length < len
+      str = pad + str
+    str
+
+  @padRight: (str, len, pad) ->
+    str = '' + str
+    while str.length < len
+      str += pad
+    str
 
 
 
