@@ -1505,6 +1505,23 @@ class sc.ript.util.ByteArray
 
 
 
+class sc.ript.util.Iterator
+
+  @count: (len, callback, step = 1) ->
+    return if step is 0 or len <= 0
+    if step > 0
+      i = 0
+      while i < len
+        return if callback(i) is false
+        i += step
+    else
+      i = len
+      while (i += step) >= 0
+        return if callback(i) is false
+        
+
+
+
 class sc.ript.util.NumberUtil
 
   @RADIAN_PER_DEGREE: Math.PI / 180
@@ -1541,6 +1558,14 @@ class sc.ript.util.NumberUtil
     while value isnt (tmp = value.replace /^([+-]?\d+)(\d\d\d)/, '$1,$2')
       value = tmp
     value
+
+  @digitAt: (num, digit) ->
+    str = "#{num}"
+    return 0 if digit < 0 or digit >= str.length
+    +str.substr -(digit + 1), 1
+
+  @digits: (num) ->
+    "#{num}".length
 
 
 
