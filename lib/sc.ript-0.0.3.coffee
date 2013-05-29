@@ -1427,30 +1427,6 @@ class sc.ript.geom.Rectangle
 
 
 
-class sc.ript.path
-
-  @join: (pathes...) ->
-    pathes = pathes.join('/').replace(/\/{2,}/g, '/').split('/');
-    normalized = []
-    for path in pathes
-      switch path
-        when '.'
-          # do nothing
-          break
-        when '..'
-          last = normalized[normalized.length - 1]
-          if last? && last isnt '..'
-            normalized.pop()
-          else
-            normalized.push path
-          break
-        else
-          normalized.push path
-          break
-    return normalized.join '/'
-
-
-
 class sc.ript.serializer.QueryString
 
   {Type} = sc.ript.util
@@ -1480,9 +1456,10 @@ class sc.ript.serializer.QueryString
 
 
 
-class ArrayUtil
+class sc.ript.util.ArrayUtil
 
   slice = Array::slice
+
 
   @unique: (arr) ->
     arr = slice.call arr
@@ -1492,6 +1469,9 @@ class ArrayUtil
         arr.splice i--, 1
       storage[elem] = true
     arr
+
+  @one: (arr) ->
+    arr[arr.length * Math.random() >> 0]
 
 
 class sc.ript.util.ByteArray
@@ -1580,6 +1560,55 @@ class sc.ript.util.NumberUtil
 
   @digits: (num) ->
     "#{num}".length
+
+
+
+class sc.ript.util.Path
+
+  splitPathRe = /^(\/?|)([\s\S]*?)((?:\.{1,2}|[^\/]+?|)(\.[^.\/]*|))(?:[\/]*)$/
+  splitPath = (filename) ->
+    splitPathRe.exec(filename).splice(1)
+
+
+  @join: (pathes...) ->
+    pathes = pathes.join('/').replace(/\/{2,}/g, '/').split('/');
+    normalized = []
+    for path in pathes
+      switch path
+        when '.'
+        # do nothing
+          break
+        when '..'
+          last = normalized[normalized.length - 1]
+          if last? && last isnt '..'
+            normalized.pop()
+          else
+            normalized.push path
+          break
+        else
+          normalized.push path
+          break
+    normalized.join '/'
+
+  @dirname: (path) ->
+    [ root, dir ] = splitPath path
+    return '.' if not root? and not dir?
+    if dir
+      dir = dir.substr 0, dir.length - 1
+    root + dir
+
+
+  @basename: (path, ext) ->
+    [ {},
+    {},
+      f ] = splitPath path
+    if ext and f.substr(-1 * ext.length) is ext
+      f = f.substr 0, f.length - ext.length
+    f
+
+  @extname: (path) ->
+    splitPath(path)[3]
+
 
 
 
