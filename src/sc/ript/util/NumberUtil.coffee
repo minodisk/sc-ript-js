@@ -36,10 +36,26 @@ class sc.ript.util.NumberUtil
     value
 
   @digitAt: (num, digit) ->
-    str = "#{num}"
-    return 0 if digit < 0 or digit >= str.length
-    +str.substr -(digit + 1), 1
+    [integer, decimal] = "#{num}".split '.'
+
+    if digit < 0
+      unless decimal?
+        decimal = ''
+      char = decimal.substr Math.abs(digit), 1
+      if char?
+        +char
+      else
+        0
+    else if digit >= integer.length
+      -1
+    else
+      char = integer.substr -(digit + 1), 1
+      if char?
+        +char
+      else
+        -1
 
   @digits: (num) ->
-    "#{num}".length
+    [integer] = "#{num}".split '.'
+    "#{integer}".length
 
