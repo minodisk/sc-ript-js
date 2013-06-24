@@ -1615,9 +1615,7 @@ class sc.ript.util.Path
 
 
   @basename: (path, ext) ->
-    [ {},
-    {},
-      f ] = splitPath path
+    [ {}, {}, f ] = splitPath path
     if ext and f.substr(-1 * ext.length) is ext
       f = f.substr 0, f.length - ext.length
     f
@@ -1703,3 +1701,24 @@ class sc.ript.util.Type
     value is Object value
 
 
+
+
+class sc.ript.util.URL
+
+  splitURLRe = /^((\S+?:)(?:\/\/)?(([^\/:]+)(:\d+)?))([^?#]*)(\?[^#]*)?(#[\s\S]*)?$/
+
+  @parse: (url) ->
+    r = splitURLRe.exec url
+    for v, i in r
+      unless v?
+        r[i] = ''
+    [href, origin, protocol, host, hostname, port, pathname, search, hash] = r
+    href    : href
+    origin  : origin
+    protocol: protocol
+    host    : host
+    hostname: hostname
+    port    : port
+    pathname: pathname
+    search  : search
+    hash    : hash

@@ -34,9 +34,7 @@ class sc.ript.util.Path
 
 
   @basename: (path, ext) ->
-    [ {},
-    {},
-      f ] = splitPath path
+    [ {}, {}, f ] = splitPath path
     if ext and f.substr(-1 * ext.length) is ext
       f = f.substr 0, f.length - ext.length
     f
