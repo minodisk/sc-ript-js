@@ -9,6 +9,6 @@ task 'compile', 'compile with coffeemill', ({output}) ->
     '-n', 'sc.ript'
     '-v', 'gitTag'
     '-o', outputs.join(',')
-    '-wm'
+    '-wmu'
   ],
     stdio: 'inherit'

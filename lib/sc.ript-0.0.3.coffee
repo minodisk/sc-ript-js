@@ -1,17 +1,10 @@
-sc = {
-  "ript": {
-    "color": {},
-    "deferred": {},
-    "display": {},
-    "event": {},
-    "filter": {},
-    "geom": {},
-    "serializer": {},
-    "util": {}
-  }
-}
-if window? then window.sc = sc
-if module? then module.exports = sc
+if window?
+  window.sc ?= {}
+  sc = window.sc
+if module?.exports?
+  module.exports.sc ?= {}
+  sc = module.exports.sc
+sc = $.extend true, sc, {"ript":{"color":{},"deferred":{},"display":{},"event":{},"filter":{},"geom":{},"serializer":{},"util":{}}}
 
 class sc.ript.color.Color
 
